@@ -30,7 +30,7 @@
       ]
     },
     "esModuleInterop": true,
-    "verbatimModul  eSyntax": true,
+    "verbatimModuleSyntax": true,
     "noEmit": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,

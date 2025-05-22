@@ -1,123 +1,129 @@
 import { useState } from 'react';
 import Pagination from './Pagination';
 
-// Mock saved jobs data - replace with actual API call
+// Mock saved jobs data
 const mockSavedJobs = [
     {
         id: 1,
-        title: "Senior Software Engineer",
-        company: "Tech Solutions Inc.",
-        location: "New York, NY",
-        salary: "$120,000 - $150,000",
-        type: "Full-time",
-        posted: "2 days ago",
-        description: "We're looking for a Senior Software Engineer to join our team and help build scalable applications...",
-        requirements: ["5+ years of experience", "React/Node.js", "AWS", "Microservices"],
-        savedDate: "2024-03-15"
+        title: 'Senior Software Engineer',
+        company: 'Tech Corp',
+        location: 'New York, NY',
+        type: 'Full-time',
+        salary: '$120,000 - $150,000',
+        savedDate: '2024-02-15',
+        description: 'We are looking for a Senior Software Engineer to join our team...',
+        requirements: ['5+ years of experience', 'React', 'Node.js', 'AWS'],
     },
     {
         id: 2,
-        title: "Frontend Developer",
-        company: "Digital Innovations",
-        location: "Remote",
-        salary: "$90,000 - $110,000",
-        type: "Full-time",
-        posted: "1 day ago",
-        description: "Join our team as a Frontend Developer and work on cutting-edge web applications...",
-        requirements: ["3+ years of experience", "React", "TypeScript", "CSS/SCSS"],
-        savedDate: "2024-03-14"
+        title: 'Frontend Developer',
+        company: 'Web Solutions Inc',
+        location: 'Remote',
+        type: 'Full-time',
+        salary: '$90,000 - $110,000',
+        savedDate: '2024-02-10',
+        description: 'Join our team as a Frontend Developer...',
+        requirements: ['3+ years of experience', 'React', 'TypeScript', 'CSS'],
     },
     {
         id: 3,
-        title: "Full Stack Developer",
-        company: "StartUp Vision",
-        location: "San Francisco, CA",
-        salary: "$100,000 - $130,000",
-        type: "Full-time",
-        posted: "3 days ago",
-        description: "Exciting opportunity for a Full Stack Developer to work on innovative projects...",
-        requirements: ["4+ years of experience", "JavaScript", "Python", "SQL"],
-        savedDate: "2024-03-13"
-    }
+        title: 'Full Stack Developer',
+        company: 'Digital Innovations',
+        location: 'San Francisco, CA',
+        type: 'Contract',
+        salary: '$100,000 - $130,000',
+        savedDate: '2024-02-01',
+        description: 'Looking for a Full Stack Developer...',
+        requirements: ['4+ years of experience', 'React', 'Node.js', 'MongoDB'],
+    },
 ];
-
-interface SavedJob {
-    id: string;
-    title: string;
-    company: string;
-    location: string;
-    type: string;
-    salary: string;
-    savedDate: string;
-}
 
 export default function SavedJobs() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [searchQuery, setSearchQuery] = useState('');
 
-    // Calculate pagination
     const totalPages = Math.ceil(mockSavedJobs.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const currentSavedJobs = mockSavedJobs.slice(startIndex, endIndex);
+    const currentJobs = mockSavedJobs.slice(startIndex, endIndex);
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
-        // Scroll to top of saved jobs list
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleItemsPerPageChange = (size: number) => {
-        setItemsPerPage(size);
-        setCurrentPage(1); // Reset to first page when changing items per page
+    const handleItemsPerPageChange = (newItemsPerPage: number) => {
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1);
     };
 
     return (
         <div className="space-y-6">
             {/* Header Section */}
-            <div className="bg-white p-4 rounded-lg shadow-md mb-6 border border-blue-100">
-                <h2 className="text-xl font-semibold text-blue-900">Saved Jobs</h2>
-                <p className="text-blue-600 mt-1">Your bookmarked job opportunities</p>
-            </div>
-
-            {/* Search and Filter Section */}
-            <div className="bg-white p-4 rounded-lg shadow-md mb-6 border border-blue-100">
-                <div className="flex space-x-4">
-                    <input
-                        type="text"
-                        placeholder="Search saved jobs..."
-                        className="flex-1 px-4 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-                        Search
-                    </button>
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <h2 className="text-xl sm:text-2xl font-semibold text-blue-900">Saved Jobs</h2>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <input
+                            type="text"
+                            placeholder="Search saved jobs..."
+                            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <select className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Types</option>
+                            <option value="full-time">Full-time</option>
+                            <option value="part-time">Part-time</option>
+                            <option value="contract">Contract</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             {/* Saved Jobs List */}
             <div className="space-y-4">
-                {currentSavedJobs.map((job) => (
-                    <div key={job.id} className="bg-white p-6 rounded-lg shadow-md border border-blue-100 hover:border-blue-300 transition-colors">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h3 className="text-lg font-semibold text-blue-900">{job.title}</h3>
-                                <p className="text-blue-600">{job.company}</p>
+                {currentJobs.map((job) => (
+                    <div key={job.id} className="bg-white rounded-lg shadow-md p-4 sm:p-6 hover:shadow-lg transition-shadow">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex-1">
+                                <h3 className="text-lg sm:text-xl font-semibold text-blue-900">{job.title}</h3>
+                                <p className="text-gray-600">{job.company}</p>
                             </div>
-                            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                                {job.type}
-                            </span>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                    {job.type}
+                                </span>
+                                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                                    {job.location}
+                                </span>
+                            </div>
                         </div>
-                        <div className="mt-2 text-gray-600">
-                            <p>{job.location}</p>
-                            <p className="text-green-600 font-medium">{job.salary}</p>
+                        <div className="mt-4">
+                            <p className="text-gray-600">{job.description}</p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {job.requirements.map((req, index) => (
+                                    <span
+                                        key={index}
+                                        className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
+                                    >
+                                        {req}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                        <div className="mt-4 flex justify-between items-center">
-                            <span className="text-sm text-gray-500">Saved on {job.savedDate}</span>
-                            <div className="space-x-2">
-                                <button className="text-blue-600 hover:text-blue-800 cursor-pointer">
-                                    View Details
+                        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="text-gray-600">
+                                <span className="font-medium">{job.salary}</span>
+                                <span className="mx-2">•</span>
+                                <span>Saved on {job.savedDate}</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer">
+                                    Apply Now
                                 </button>
-                                <button className="text-red-600 hover:text-red-800 cursor-pointer">
+                                <button className="px-4 py-2 border border-red-600 text-red-600 rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 cursor-pointer">
                                     Remove
                                 </button>
                             </div>
@@ -127,7 +133,7 @@ export default function SavedJobs() {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            <div className="mt-6">
                 <Pagination
                     currentPage={currentPage}
                     totalPages={totalPages}
@@ -135,7 +141,7 @@ export default function SavedJobs() {
                     itemsPerPage={itemsPerPage}
                     onItemsPerPageChange={handleItemsPerPageChange}
                 />
-            )}
+            </div>
         </div>
     );
 } 

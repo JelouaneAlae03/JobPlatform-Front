@@ -140,6 +140,7 @@ const mockJobs = [
 export default function JobListings() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Calculate pagination
     const totalPages = Math.ceil(mockJobs.length / itemsPerPage);
@@ -153,57 +154,94 @@ export default function JobListings() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleItemsPerPageChange = (size: number) => {
-        setItemsPerPage(size);
+    const handleItemsPerPageChange = (newItemsPerPage: number) => {
+        setItemsPerPage(newItemsPerPage);
         setCurrentPage(1); // Reset to first page when changing items per page
     };
 
     return (
         <div className="space-y-6">
             {/* Search and Filter Section */}
-            <div className="bg-white p-4 rounded-lg shadow-md mb-6 border border-blue-100">
-                <div className="flex space-x-4">
-                    <input
-                        type="text"
-                        placeholder="Search jobs..."
-                        className="flex-1 px-4 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-                        Search
-                    </button>
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                        <input
+                            type="text"
+                            placeholder="Search jobs..."
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        <select className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Types</option>
+                            <option value="full-time">Full-time</option>
+                            <option value="part-time">Part-time</option>
+                            <option value="contract">Contract</option>
+                        </select>
+                        <select className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Locations</option>
+                            <option value="remote">Remote</option>
+                            <option value="onsite">On-site</option>
+                            <option value="hybrid">Hybrid</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             {/* Job Listings */}
             <div className="space-y-4">
                 {currentJobs.map((job) => (
-                    <div key={job.id} className="bg-white p-6 rounded-lg shadow-md border border-blue-100 hover:border-blue-300 transition-colors">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h3 className="text-lg font-semibold text-blue-900">{job.title}</h3>
-                                <p className="text-blue-600">{job.company}</p>
+                    <div key={job.id} className="bg-white rounded-lg shadow-md p-4 sm:p-6 hover:shadow-lg transition-shadow cursor-pointer">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex-1">
+                                <h3 className="text-lg sm:text-xl font-semibold text-blue-900">{job.title}</h3>
+                                <p className="text-gray-600">{job.company}</p>
                             </div>
-                            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                                {job.type}
-                            </span>
+                            <div className="flex flex-wrap gap-2">
+                                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                    {job.type}
+                                </span>
+                                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                                    {job.location}
+                                </span>
+                            </div>
                         </div>
-                        <div className="mt-2 text-gray-600">
-                            <p>{job.location}</p>
-                            <p className="text-green-600 font-medium">{job.salary}</p>
+                        <div className="mt-4">
+                            <p className="text-gray-600">{job.description}</p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {job.requirements.map((req, index) => (
+                                    <span
+                                        key={index}
+                                        className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm"
+                                    >
+                                        {req}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                        <p className="mt-2 text-gray-600 line-clamp-2">{job.description}</p>
-                        <div className="mt-4 flex justify-between items-center">
-                            <span className="text-sm text-gray-500">Posted {job.posted}</span>
-                            <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-                                Apply Now
-                            </button>
+                        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="text-gray-600">
+                                <span className="font-medium">{job.salary}</span>
+                                <span className="mx-2">•</span>
+                                <span>Posted {job.posted}</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer">
+                                    Apply Now
+                                </button>
+                                <button className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer">
+                                    Save
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))}
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            <div className="mt-6">
                 <Pagination
                     currentPage={currentPage}
                     totalPages={totalPages}
@@ -211,7 +249,7 @@ export default function JobListings() {
                     itemsPerPage={itemsPerPage}
                     onItemsPerPageChange={handleItemsPerPageChange}
                 />
-            )}
+            </div>
         </div>
     );
 } 

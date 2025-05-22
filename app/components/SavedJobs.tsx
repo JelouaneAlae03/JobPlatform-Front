@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import Pagination from './Pagination';
+
 // Mock saved jobs data - replace with actual API call
 const mockSavedJobs = [
     {
@@ -38,9 +41,39 @@ const mockSavedJobs = [
     }
 ];
 
+interface SavedJob {
+    id: string;
+    title: string;
+    company: string;
+    location: string;
+    type: string;
+    salary: string;
+    savedDate: string;
+}
+
 export default function SavedJobs() {
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // Calculate pagination
+    const totalPages = Math.ceil(mockSavedJobs.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentSavedJobs = mockSavedJobs.slice(startIndex, endIndex);
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        // Scroll to top of saved jobs list
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleItemsPerPageChange = (size: number) => {
+        setItemsPerPage(size);
+        setCurrentPage(1); // Reset to first page when changing items per page
+    };
+
     return (
-        <>
+        <div className="space-y-6">
             {/* Header Section */}
             <div className="bg-white p-4 rounded-lg shadow-md mb-6 border border-blue-100">
                 <h2 className="text-xl font-semibold text-blue-900">Saved Jobs</h2>
@@ -62,51 +95,47 @@ export default function SavedJobs() {
             </div>
 
             {/* Saved Jobs List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {mockSavedJobs.map((job) => (
-                    <div key={job.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 border border-blue-100">
+            <div className="space-y-4">
+                {currentSavedJobs.map((job) => (
+                    <div key={job.id} className="bg-white p-6 rounded-lg shadow-md border border-blue-100 hover:border-blue-300 transition-colors">
                         <div className="flex justify-between items-start">
                             <div>
-                                <h2 className="text-xl font-semibold text-blue-900">{job.title}</h2>
-                                <p className="text-blue-600 font-medium">{job.company}</p>
-                                <div className="mt-2 flex items-center space-x-4 text-sm text-blue-600">
-                                    <span>{job.location}</span>
-                                    <span>•</span>
-                                    <span>{job.type}</span>
-                                    <span>•</span>
-                                    <span>{job.posted}</span>
-                                </div>
+                                <h3 className="text-lg font-semibold text-blue-900">{job.title}</h3>
+                                <p className="text-blue-600">{job.company}</p>
                             </div>
-                            <div className="text-right">
-                                <p className="text-blue-900 font-medium">{job.salary}</p>
-                                <p className="text-sm text-blue-600 mt-2">Saved on {job.savedDate}</p>
-                            </div>
+                            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                                {job.type}
+                            </span>
                         </div>
-                        <p className="mt-4 text-blue-800 line-clamp-2">{job.description}</p>
-                        <div className="mt-4">
-                            <h3 className="text-sm font-medium text-blue-900">Requirements:</h3>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                                {job.requirements.map((req, index) => (
-                                    <span
-                                        key={index}
-                                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
-                                    >
-                                        {req}
-                                    </span>
-                                ))}
-                            </div>
+                        <div className="mt-2 text-gray-600">
+                            <p>{job.location}</p>
+                            <p className="text-green-600 font-medium">{job.salary}</p>
                         </div>
-                        <div className="mt-6 flex justify-end space-x-3">
-                            <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-                                Apply Now
-                            </button>
-                            <button className="bg-white text-blue-600 px-4 py-2 rounded-md border border-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-                                Remove
-                            </button>
+                        <div className="mt-4 flex justify-between items-center">
+                            <span className="text-sm text-gray-500">Saved on {job.savedDate}</span>
+                            <div className="space-x-2">
+                                <button className="text-blue-600 hover:text-blue-800 cursor-pointer">
+                                    View Details
+                                </button>
+                                <button className="text-red-600 hover:text-red-800 cursor-pointer">
+                                    Remove
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))}
             </div>
-        </>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                />
+            )}
+        </div>
     );
 } 

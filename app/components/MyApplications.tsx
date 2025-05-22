@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import Pagination from './Pagination';
+
 // Mock applications data - replace with actual API call
 const mockApplications = [
     {
@@ -29,24 +32,44 @@ const mockApplications = [
     }
 ];
 
-const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-        case 'interview scheduled':
-            return 'bg-green-100 text-green-800';
-        case 'under review':
-            return 'bg-blue-100 text-blue-800';
-        case 'application submitted':
-            return 'bg-yellow-100 text-yellow-800';
-        case 'rejected':
-            return 'bg-red-100 text-red-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-};
-
 export default function MyApplications() {
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // Calculate pagination
+    const totalPages = Math.ceil(mockApplications.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentApplications = mockApplications.slice(startIndex, endIndex);
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+        // Scroll to top of applications list
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleItemsPerPageChange = (size: number) => {
+        setItemsPerPage(size);
+        setCurrentPage(1); // Reset to first page when changing items per page
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status.toLowerCase()) {
+            case 'interview scheduled':
+                return 'bg-green-100 text-green-800';
+            case 'under review':
+                return 'bg-blue-100 text-blue-800';
+            case 'application submitted':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'rejected':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
+
     return (
-        <>
+        <div className="space-y-6">
             {/* Header Section */}
             <div className="bg-white p-4 rounded-lg shadow-md mb-6 border border-blue-100">
                 <h2 className="text-xl font-semibold text-blue-900">My Applications</h2>
@@ -55,7 +78,7 @@ export default function MyApplications() {
 
             {/* Applications List */}
             <div className="space-y-4">
-                {mockApplications.map((application) => (
+                {currentApplications.map((application) => (
                     <div
                         key={application.id}
                         className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 border border-blue-100"
@@ -88,6 +111,17 @@ export default function MyApplications() {
                     </div>
                 ))}
             </div>
-        </>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                />
+            )}
+        </div>
     );
 } 

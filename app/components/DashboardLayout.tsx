@@ -64,7 +64,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                     </nav>
 
                     {/* User Section */}
-                    <div className="p-4 border-t border-blue-800">
+                    {/* <div className="p-4 border-t border-blue-800">
                         <div className="flex items-center space-x-3">
                             <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center text-white">
                                 {user?.name?.[0]?.toUpperCase() || 'U'}
@@ -78,7 +78,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 

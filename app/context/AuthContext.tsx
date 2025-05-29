@@ -1,6 +1,18 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 
+export interface Company {
+    id: string;
+    name: string;
+    rc: string;
+    email: string;
+    domain: string;
+    address: string;
+    country: string;
+    ville: string;
+    date: string;
+}
+
 export interface User {
     id: string;
     name: string;
@@ -16,8 +28,9 @@ export interface User {
 
 interface AuthContextType {
     user: User | null;
-    login: (email: string, password: string) => Promise<void>;
-    register: (email: string, password: string, name: string) => Promise<void>;
+    company: Company | null;
+    login: (identifier: string, password: string, isCompany: boolean) => Promise<void>;
+    registerCompany: (companyData: Omit<Company, 'id'> & { company_password: string }) => Promise<void>;
     logout: () => void;
     isAuthenticated: boolean;
 }
@@ -26,64 +39,76 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
+    const [company, setCompany] = useState<Company | null>(null);
 
-    const login = async (email: string, password: string) => {
+    const login = async (identifier: string, password: string, isCompany: boolean) => {
         try {
             // TODO: Replace with actual API call
-            const response = await fetch('/api/auth/login', {
+            const endpoint = isCompany ? '/api/auth/company-login' : '/api/auth/login';
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({
+                    ...(isCompany ? { companyName: identifier, rc: password } : { email: identifier, password })
+                }),
             });
 
             if (!response.ok) {
                 throw new Error('Login failed');
             }
 
-            const userData = await response.json();
-            setUser(userData);
-            localStorage.setItem('user', JSON.stringify(userData));
+            const data = await response.json();
+            if (isCompany) {
+                setCompany(data);
+                localStorage.setItem('company', JSON.stringify(data));
+            } else {
+                setUser(data);
+                localStorage.setItem('user', JSON.stringify(data));
+            }
         } catch (error) {
             console.error('Login error:', error);
             throw error;
         }
     };
 
-    const register = async (email: string, password: string, name: string) => {
+    const registerCompany = async (companyData: Omit<Company, 'id'> & { company_password: string }) => {
         try {
             // TODO: Replace with actual API call
-            const response = await fetch('/api/auth/register', {
+            const response: Response = await fetch('/api/auth/register-company', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, name }),
+                body: JSON.stringify(companyData),
             });
 
             if (!response.ok) {
-                throw new Error('Registration failed');
+                throw new Error('Company registration failed');
             }
 
-            const userData = await response.json();
-            setUser(userData);
-            localStorage.setItem('user', JSON.stringify(userData));
+            const responseData: Company = await response.json();
+            setCompany(responseData);
+            localStorage.setItem('company', JSON.stringify(responseData));
         } catch (error) {
-            console.error('Registration error:', error);
+            console.error('Company registration error:', error);
             throw error;
         }
     };
 
     const logout = () => {
         setUser(null);
+        setCompany(null);
         localStorage.removeItem('user');
+        localStorage.removeItem('company');
     };
 
     return (
         <AuthContext.Provider
             value={{
                 user,
+                company,
                 login,
-                register,
+                registerCompany,
                 logout,
-                isAuthenticated: !!user,
+                isAuthenticated: !!(user || company),
             }}
         >
             {children}

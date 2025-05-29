@@ -3,8 +3,11 @@ import { useNavigate, Link } from 'react-router';
 import { useAuth } from '~/context/AuthContext';
 
 export default function Login() {
+    const [isCompany, setIsCompany] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [companyName, setCompanyName] = useState('');
+    const [rc, setRc] = useState('');
     const [error, setError] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -12,10 +15,16 @@ export default function Login() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await login(email, password);
+            if (isCompany) {
+                // Handle company login
+                await login(companyName, password, true);
+            } else {
+                // Handle student login
+                await login(email, password, false);
+            }
             navigate('/dashboard');
         } catch (err) {
-            setError('Invalid email or password');
+            setError('Invalid credentials');
         }
     };
 
@@ -33,23 +42,83 @@ export default function Login() {
                             <div className="text-sm text-red-700">{error}</div>
                         </div>
                     )}
-                    <div className="rounded-md shadow-sm -space-y-px">
-                        <div>
-                            <label htmlFor="email-address" className="sr-only">
-                                Email address
-                            </label>
+
+                    {/* User Type Selection */}
+                    <div className="flex items-center justify-center space-x-4">
+                        <label className="inline-flex items-center">
                             <input
-                                id="email-address"
-                                name="email"
-                                type="email"
-                                autoComplete="email"
-                                required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                                placeholder="Email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                type="checkbox"
+                                className="form-checkbox h-5 w-5 text-indigo-600"
+                                checked={!isCompany}
+                                onChange={() => setIsCompany(false)}
                             />
-                        </div>
+                            <span className="ml-2 text-gray-700">Student</span>
+                        </label>
+                        <label className="inline-flex items-center">
+                            <input
+                                type="checkbox"
+                                className="form-checkbox h-5 w-5 text-indigo-600"
+                                checked={isCompany}
+                                onChange={() => setIsCompany(true)}
+                            />
+                            <span className="ml-2 text-gray-700">Company</span>
+                        </label>
+                    </div>
+
+                    <div className="rounded-md shadow-sm -space-y-px">
+                        {isCompany ? (
+                            // Company Login Fields
+                            <>
+                                <div>
+                                    <label htmlFor="company-name" className="sr-only">
+                                        Company Name
+                                    </label>
+                                    <input
+                                        id="company-name"
+                                        name="companyName"
+                                        type="text"
+                                        required
+                                        className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                                        placeholder="Company Name"
+                                        value={companyName}
+                                        onChange={(e) => setCompanyName(e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="rc" className="sr-only">
+                                        RC Number
+                                    </label>
+                                    <input
+                                        id="rc"
+                                        name="rc"
+                                        type="text"
+                                        required
+                                        className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                                        placeholder="RC Number"
+                                        value={rc}
+                                        onChange={(e) => setRc(e.target.value)}
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            // Student Login Fields
+                            <div>
+                                <label htmlFor="email-address" className="sr-only">
+                                    Email address
+                                </label>
+                                <input
+                                    id="email-address"
+                                    name="email"
+                                    type="email"
+                                    autoComplete="email"
+                                    required
+                                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                                    placeholder="Email address"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
+                            </div>
+                        )}
                         <div>
                             <label htmlFor="password" className="sr-only">
                                 Password

@@ -1,5 +1,8 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import toast from 'react-hot-toast';
 
 export interface Company {
     id: string;
@@ -29,8 +32,8 @@ export interface User {
 interface AuthContextType {
     user: User | null;
     company: Company | null;
-    login: (identifier: string, password: string, isCompany: boolean) => Promise<void>;
-    registerCompany: (companyData: Omit<Company, 'id'> & { company_password: string }) => Promise<void>;
+    login: (email: string, password: string, isCompany: boolean) => Promise<void>;
+    register: (data: any) => Promise<{ message: string; company?: any; user?: any }>;
     logout: () => void;
     isAuthenticated: boolean;
 }
@@ -40,30 +43,40 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [company, setCompany] = useState<Company | null>(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    const login = async (identifier: string, password: string, isCompany: boolean) => {
+    const login = async (email: string, password: string, isCompany: boolean) => {
         try {
-            // TODO: Replace with actual API call
-            const endpoint = isCompany ? '/api/auth/company-login' : '/api/auth/login';
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...(isCompany ? { companyName: identifier, rc: password } : { email: identifier, password })
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Login failed');
-            }
-
-            const data = await response.json();
             if (isCompany) {
-                setCompany(data);
-                localStorage.setItem('company', JSON.stringify(data));
+                // Handle company login
+                const response = await axios.post('http://127.0.0.1:8000/api/login', {
+                    company_checkbox: true,
+                    email_company: email,
+                    password_company: password
+                });
+
+                if (response.data && response.data.access_token) {
+                    Cookies.set('access_token', response.data.access_token, { expires: 1 });
+                    Cookies.set('user', JSON.stringify(response.data.user), { expires: 1 });
+                    Cookies.set('user_type', response.data.user_type, { expires: 1 });
+                    setUser(response.data.user);
+                    setIsAuthenticated(true);
+                }
             } else {
-                setUser(data);
-                localStorage.setItem('user', JSON.stringify(data));
+                // Handle student login
+                const response = await axios.post('http://127.0.0.1:8000/api/login', {
+                    student_checkbox: true,
+                    email_student: email,
+                    password_student: password
+                });
+
+                if (response.data && response.data.access_token) {
+                    Cookies.set('access_token', response.data.access_token, { expires: 1 });
+                    Cookies.set('user', JSON.stringify(response.data.user), { expires: 1 });
+                    Cookies.set('user_type', response.data.user_type, { expires: 1 });
+                    setUser(response.data.user);
+                    setIsAuthenticated(true);
+                }
             }
         } catch (error) {
             console.error('Login error:', error);
@@ -71,33 +84,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const registerCompany = async (companyData: Omit<Company, 'id'> & { company_password: string }) => {
+    const register = async (data: any) => {
         try {
-            // TODO: Replace with actual API call
-            const response: Response = await fetch('/api/auth/register-company', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(companyData),
-            });
-
-            if (!response.ok) {
-                throw new Error('Company registration failed');
+            const response = await axios.post('http://127.0.0.1:8000/api/signup', data);
+            if (response.data) {
+                // Registration successful
+                return response.data;
             }
-
-            const responseData: Company = await response.json();
-            setCompany(responseData);
-            localStorage.setItem('company', JSON.stringify(responseData));
+            throw new Error('No data received from registration');
         } catch (error) {
-            console.error('Company registration error:', error);
+            console.error('Registration error:', error);
             throw error;
         }
     };
 
     const logout = () => {
+        // Show success message
+        toast.success(
+            <div>
+                <div className="font-bold text-lg mb-2">Logged Out Successfully! 👋</div>
+                <div className="text-sm opacity-90">
+                    Thank you for using our platform. See you soon!
+                </div>
+            </div>,
+            {
+                duration: 3000,
+                position: 'top-center',
+                style: {
+                    background: '#10B981',
+                    color: '#fff',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                },
+                icon: '👋',
+            }
+        );
+
+        // Remove all cookies
+        Cookies.remove('access_token');
+        Cookies.remove('user');
+        Cookies.remove('user_type');
+
+        // Clear state
         setUser(null);
         setCompany(null);
-        localStorage.removeItem('user');
-        localStorage.removeItem('company');
+        setIsAuthenticated(false);
     };
 
     return (
@@ -106,9 +138,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 user,
                 company,
                 login,
-                registerCompany,
+                register,
                 logout,
-                isAuthenticated: !!(user || company),
+                isAuthenticated,
             }}
         >
             {children}

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '~/context/AuthContext';
+import axios from 'axios';
+import toast, { Toaster } from 'react-hot-toast';
+import Cookies from 'js-cookie';
 
 export default function Login() {
     const [isCompany, setIsCompany] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [companyName, setCompanyName] = useState('');
     const [rc, setRc] = useState('');
     const [error, setError] = useState('');
     const { login } = useAuth();
@@ -17,19 +19,136 @@ export default function Login() {
         try {
             if (isCompany) {
                 // Handle company login
-                await login(companyName, password, true);
+                const response = await axios.post('http://127.0.0.1:8000/api/login', {
+                    company_checkbox: true,
+                    email_company: email,
+                    password_company: password,
+                    rc: rc
+                });
+
+                if (response.data && response.data.access_token) {
+                    // Save access token and user data in cookies
+                    Cookies.set('access_token', response.data.access_token, { expires: 1 });
+                    Cookies.set('user', JSON.stringify(response.data.user), { expires: 1 });
+                    Cookies.set('user_type', response.data.user_type, { expires: 1 });
+
+                    // Show success toast with login approved message
+                    toast.success(
+                        <div>
+                            <div className="font-bold text-lg mb-2">Login Successful! 🎉</div>
+                            <div className="text-sm opacity-90">
+                                Welcome back, {response.data.user.name}
+                            </div>
+                            <div className="text-xs opacity-75 mt-1">
+                                Redirecting to dashboard...
+                            </div>
+                        </div>,
+                        {
+                            duration: 3000,
+                            position: 'top-center',
+                            style: {
+                                background: '#10B981',
+                                color: '#fff',
+                                padding: '16px',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            },
+                            icon: '👋',
+                        }
+                    );
+
+                    // Wait for 3 seconds before redirecting
+                    setTimeout(() => {
+                        navigate('/');
+                    }, 3000);
+                }
             } else {
-                // Handle student login
-                await login(email, password, false);
+                // Handle student login with axios
+                const response = await axios.post('http://127.0.0.1:8000/api/login', {
+                    student_checkbox: true,
+                    email_student: email,
+                    password_student: password
+                });
+
+                if (response.data && response.data.access_token) {
+                    // Save access token and user data in cookies
+                    Cookies.set('access_token', response.data.access_token, { expires: 1 }); // Expires in 1 day
+                    Cookies.set('user', JSON.stringify(response.data.user), { expires: 1 });
+                    Cookies.set('user_type', response.data.user_type, { expires: 1 });
+
+                    // Show success toast with login approved message
+                    toast.success(
+                        <div>
+                            <div className="font-bold text-lg mb-2">Login Successful! 🎉</div>
+                            <div className="text-sm opacity-90">
+                                Welcome back, {response.data.user.first_name} {response.data.user.last_name}
+                            </div>
+                            <div className="text-xs opacity-75 mt-1">
+                                Redirecting to dashboard...
+                            </div>
+                        </div>,
+                        {
+                            duration: 3000,
+                            position: 'top-center',
+                            style: {
+                                background: '#10B981',
+                                color: '#fff',
+                                padding: '16px',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            },
+                            icon: '👋',
+                        }
+                    );
+
+                    // Wait for 3 seconds before redirecting
+                    setTimeout(() => {
+                        navigate('/');
+                    }, 3000);
+                }
             }
-            navigate('/dashboard');
-        } catch (err) {
+        } catch (err: any) {
             setError('Invalid credentials');
+            console.error('Login error:', err);
+
+            // Handle API error response
+            if (err.response?.data?.errors) {
+                const errors = err.response.data.errors as Record<string, string[]>;
+                // Get the first error message from any field
+                const firstError = Object.values(errors)[0][0];
+                toast.error(firstError, {
+                    duration: 4000,
+                    position: 'top-center',
+                    style: {
+                        background: '#EF4444',
+                        color: '#fff',
+                        padding: '16px',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    },
+                    icon: '❌',
+                });
+            } else {
+                // Fallback error message if no specific error is provided
+                toast.error(err.response?.data?.message || 'Login failed. Please try again.', {
+                    duration: 4000,
+                    position: 'top-center',
+                    style: {
+                        background: '#EF4444',
+                        color: '#fff',
+                        padding: '16px',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    },
+                    icon: '❌',
+                });
+            }
         }
     };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+            <Toaster />
             <div className="max-w-md w-full space-y-8">
                 <div>
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -70,18 +189,19 @@ export default function Login() {
                             // Company Login Fields
                             <>
                                 <div>
-                                    <label htmlFor="company-name" className="sr-only">
-                                        Company Name
+                                    <label htmlFor="email" className="sr-only">
+                                        Email address
                                     </label>
                                     <input
-                                        id="company-name"
-                                        name="companyName"
-                                        type="text"
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        autoComplete="email"
                                         required
                                         className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                                        placeholder="Company Name"
-                                        value={companyName}
-                                        onChange={(e) => setCompanyName(e.target.value)}
+                                        placeholder="Company Email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
                                     />
                                 </div>
                                 <div>

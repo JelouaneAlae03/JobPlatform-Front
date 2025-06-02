@@ -1,6 +1,7 @@
 import { useAuth } from '~/context/AuthContext';
 import { useNavigate, Link } from 'react-router';
 import { useState, useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
 
 // Sidebar navigation items
 const navigationItems = [
@@ -66,6 +67,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
     return (
         <div className="min-h-screen bg-blue-50 flex flex-col lg:flex-row">
+            <Toaster />
             {/* Mobile Header */}
             <div className="lg:hidden bg-white shadow-md p-4">
                 <div className="flex justify-between items-center">

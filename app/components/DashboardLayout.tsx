@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 // Sidebar navigation items
 const navigationItems = [
     { name: 'Dashboard', icon: '📊', path: '/' },
+    { name: 'Offer Manager', icon: '💼', path: '/offer-manager' },
     { name: 'My Applications', icon: '📝', path: '/applications' },
     { name: 'Saved Jobs', icon: '🔖', path: '/saved' },
     { name: 'Profile', icon: '👤', path: '/profile' },

@@ -13,3 +13,31 @@ body {
     color-scheme: dark;
   }
 }
+
+/* Global input text color */
+input,
+textarea,
+select {
+  @apply text-black px-4 py-2;
+}
+
+/* Date input styles */
+input[type="date"] {
+  @apply cursor-pointer;
+  position: relative;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  @apply cursor-pointer;
+  padding: 0.5rem;
+  margin-right: -0.5rem;
+  filter: invert(0.5);
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  @apply px-2;
+}
+
+input[type="date"]:focus {
+  @apply outline-none ring-2 ring-blue-500 border-blue-500;
+}

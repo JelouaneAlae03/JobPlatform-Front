@@ -15,7 +15,7 @@ interface OfferStatus {
 }
 
 interface Skill {
-    id: number;
+    id?: number;
     name: string;
 }
 
@@ -61,7 +61,7 @@ export default function JobOffers() {
         max_applications: 20,
         id_JobType: 1,
         id_OffreStatus: 1,
-        skills: [] as number[]
+        skills: [] as Skill[]
     });
 
     // Fetch skills
@@ -125,12 +125,12 @@ export default function JobOffers() {
     };
 
     // Handle skill selection
-    const handleSkillChange = (skillId: number) => {
+    const handleSkillChange = (skill: Skill) => {
         setFormData(prev => ({
             ...prev,
-            skills: prev.skills.includes(skillId)
-                ? prev.skills.filter(id => id !== skillId)
-                : [...prev.skills, skillId]
+            skills: prev.skills.some(s => s.name === skill.name)
+                ? prev.skills.filter(s => s.name !== skill.name)
+                : [...prev.skills, skill]
         }));
     };
 
@@ -138,33 +138,19 @@ export default function JobOffers() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const companyId = JSON.parse(Cookies.get('user') || '{}').id;
             const offerData = {
-                id: editingOffer?.id || null,
                 title: formData.title,
                 Job_Descriptin: formData.Job_Descriptin,
-                skills: formData.skills.map(id => skills.find(skill => skill.id === id)?.name).join(', '),
-                date: new Date().toISOString(),
+                skills: formData.skills.map(skill => skill.name).join(', '),
                 expiration_date: formData.expiration_date,
                 max_applications: formData.max_applications,
-                id_company: companyId,
                 id_JobType: formData.id_JobType,
-                id_OffreStatus: formData.id_OffreStatus,
-                created_at: null,
-                company: {
-                    id: companyId
-                },
-                jobtype: {
-                    id: formData.id_JobType
-                },
-                offrestatus: {
-                    id: formData.id_OffreStatus
-                }
+                id_OffreStatus: formData.id_OffreStatus
             };
 
             if (editingOffer) {
                 // Update existing offer
-                await axios.put(`http://127.0.0.1:8000/api/offers/${editingOffer.id}`, offerData, {
+                await axios.put(`http://127.0.0.1:8000/api/Addoffers/${editingOffer.id}`, offerData, {
                     headers: {
                         Authorization: `Bearer ${Cookies.get('access_token')}`,
                         'Content-Type': 'application/json'
@@ -173,7 +159,7 @@ export default function JobOffers() {
                 toast.success('Job offer updated successfully');
             } else {
                 // Create new offer
-                await axios.post('http://127.0.0.1:8000/api/offers', offerData, {
+                await axios.post('http://127.0.0.1:8000/api/Addoffers', offerData, {
                     headers: {
                         Authorization: `Bearer ${Cookies.get('access_token')}`,
                         'Content-Type': 'application/json'
@@ -194,7 +180,17 @@ export default function JobOffers() {
             });
             fetchOffers();
         } catch (error) {
-            toast.error('Failed to save job offer');
+            if (axios.isAxiosError(error) && error.response?.data?.errors) {
+                // Display validation errors
+                const errors = error.response.data.errors;
+                Object.values(errors).forEach((errorMessages: any) => {
+                    errorMessages.forEach((message: string) => {
+                        toast.error(message);
+                    });
+                });
+            } else {
+                toast.error('Failed to save job offer');
+            }
         }
     };
 
@@ -225,7 +221,7 @@ export default function JobOffers() {
             max_applications: offer.max_applications,
             id_JobType: offer.id_JobType,
             id_OffreStatus: offer.id_OffreStatus,
-            skills: offer.skills?.map(skill => skill.id) || []
+            skills: offer.skills?.map(skill => ({ ...skill })) || []
         });
         setIsModalOpen(true);
     };
@@ -363,6 +359,7 @@ export default function JobOffers() {
                                         name="expiration_date"
                                         value={formData.expiration_date}
                                         onChange={handleInputChange}
+                                        min={new Date().toISOString().split('T')[0]}
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                         required
                                     />
@@ -414,21 +411,47 @@ export default function JobOffers() {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Required Skills</label>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                    {skills.map(skill => (
-                                        <label
-                                            key={skill.id}
-                                            className="inline-flex items-center space-x-2 p-2 border rounded-md hover:bg-gray-50 cursor-pointer"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.skills.includes(skill.id)}
-                                                onChange={() => handleSkillChange(skill.id)}
-                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                            />
-                                            <span className="text-sm text-gray-700">{skill.name}</span>
-                                        </label>
-                                    ))}
+                                <div className="space-y-4">
+                                    <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[42px] focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                                        {formData.skills.map(skill => (
+                                            <div
+                                                key={skill.id}
+                                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                                            >
+                                                {skill.name}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleSkillChange(skill)}
+                                                    className="ml-2 text-blue-600 hover:text-blue-800"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <input
+                                            type="text"
+                                            name="skills_text"
+                                            placeholder="Type a skill and press Enter"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    const input = e.target as HTMLInputElement;
+                                                    const value = input.value.trim();
+                                                    if (value) {
+                                                        const newSkill = { name: value };
+                                                        if (!formData.skills.some(s => s.name === value)) {
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                skills: [...prev.skills, newSkill]
+                                                            }));
+                                                        }
+                                                        input.value = '';
+                                                    }
+                                                }
+                                            }}
+                                            className="flex-1 min-w-[120px] outline-none bg-transparent"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex justify-end space-x-3 mt-6">

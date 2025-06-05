@@ -78,6 +78,17 @@ export default function JobOffers() {
     });
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [offerToDelete, setOfferToDelete] = useState<JobOffer | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [offerToEdit, setOfferToEdit] = useState<JobOffer | null>(null);
+    const [editFormData, setEditFormData] = useState({
+        title: '',
+        Job_Descriptin: '',
+        skills: [] as Skill[],
+        expiration_date: '',
+        max_applications: 20,
+        id_JobType: 1,
+        id_OffreStatus: 1
+    });
 
     // Get unique statuses from offers
     const getUniqueStatuses = () => {
@@ -320,6 +331,82 @@ export default function JobOffers() {
         }
     };
 
+    const handleEditClick = (offer: JobOffer) => {
+        setOfferToEdit(offer);
+        // Format the expiration date to YYYY-MM-DD
+        const formattedDate = offer.expiration_date ? new Date(offer.expiration_date).toISOString().split('T')[0] : '';
+
+        setEditFormData({
+            title: offer.title,
+            Job_Descriptin: offer.Job_Descriptin,
+            skills: offer.skills?.map(skill => ({ name: skill.name })) || [],
+            expiration_date: formattedDate,
+            max_applications: offer.max_applications,
+            id_JobType: offer.id_JobType,
+            id_OffreStatus: offer.id_OffreStatus
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditSkillChange = (skill: Skill) => {
+        setEditFormData(prev => ({
+            ...prev,
+            skills: prev.skills.some(s => s.name === skill.name)
+                ? prev.skills.filter(s => s.name !== skill.name)
+                : [...prev.skills, skill]
+        }));
+    };
+
+    const handleEditConfirm = async () => {
+        if (!offerToEdit) return;
+
+        try {
+            const response = await axios.put(
+                `http://127.0.0.1:8000/api/EditOffer/${offerToEdit.id}`,
+                {
+                    ...editFormData,
+                    skills: editFormData.skills.map(skill => skill.name).join(', ')
+                },
+                {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${Cookies.get('access_token')}`
+                    }
+                }
+            );
+
+            if (response.data) {
+                toast.success('Offer updated successfully');
+                // Update the offer in the state
+                setOffers(offers.map(offer =>
+                    offer.id === offerToEdit.id
+                        ? { ...offer, ...editFormData }
+                        : offer
+                ));
+                setFilteredOffers(filteredOffers.map(offer =>
+                    offer.id === offerToEdit.id
+                        ? { ...offer, ...editFormData }
+                        : offer
+                ));
+            }
+        } catch (error) {
+            console.error('Error updating offer:', error);
+            toast.error('Failed to update offer. Please try again.');
+        } finally {
+            setIsEditModalOpen(false);
+            setOfferToEdit(null);
+        }
+    };
+
+    const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setEditFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
     return (
         <div className="container mx-auto px-4 py-8">
             <Toaster />
@@ -416,7 +503,7 @@ export default function JobOffers() {
                         </div>
                         <div className="flex justify-end space-x-2">
                             <button
-                                onClick={() => handleEdit(offer)}
+                                onClick={() => handleEditClick(offer)}
                                 className="text-blue-600 hover:text-blue-800 focus:outline-none"
                             >
                                 Edit
@@ -578,6 +665,160 @@ export default function JobOffers() {
                                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                 >
                                     {editingOffer ? 'Update' : 'Create'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {isEditModalOpen && offerToEdit && (
+                <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 shadow-xl">
+                        <h3 className="text-lg font-semibold mb-4">Edit Offer</h3>
+                        <form onSubmit={(e) => { e.preventDefault(); handleEditConfirm(); }} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Title</label>
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value={editFormData.title}
+                                    onChange={handleEditInputChange}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Description</label>
+                                <textarea
+                                    name="Job_Descriptin"
+                                    value={editFormData.Job_Descriptin}
+                                    onChange={handleEditInputChange}
+                                    rows={4}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Required Skills</label>
+                                <div className="space-y-4">
+                                    <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[42px] focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                                        {editFormData.skills.map(skill => (
+                                            <div
+                                                key={skill.name}
+                                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                                            >
+                                                {skill.name}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEditSkillChange(skill)}
+                                                    className="ml-2 text-blue-600 hover:text-blue-800"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <input
+                                            type="text"
+                                            name="skills_text"
+                                            placeholder="Type a skill and press Enter"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    const input = e.target as HTMLInputElement;
+                                                    const value = input.value.trim();
+                                                    if (value) {
+                                                        const newSkill = { name: value };
+                                                        if (!editFormData.skills.some(s => s.name === value)) {
+                                                            setEditFormData(prev => ({
+                                                                ...prev,
+                                                                skills: [...prev.skills, newSkill]
+                                                            }));
+                                                        }
+                                                        input.value = '';
+                                                    }
+                                                }
+                                            }}
+                                            className="flex-1 min-w-[120px] outline-none bg-transparent"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Expiration Date</label>
+                                    <input
+                                        type="date"
+                                        name="expiration_date"
+                                        value={editFormData.expiration_date}
+                                        onChange={handleEditInputChange}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Max Applications</label>
+                                    <input
+                                        type="number"
+                                        name="max_applications"
+                                        value={editFormData.max_applications}
+                                        onChange={handleEditInputChange}
+                                        min="1"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Job Type</label>
+                                    <select
+                                        name="id_JobType"
+                                        value={editFormData.id_JobType}
+                                        onChange={handleEditInputChange}
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    >
+                                        {jobTypes.map(type => (
+                                            <option key={type.id} value={type.id}>
+                                                {type.Libelle}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                                    <select
+                                        name="id_OffreStatus"
+                                        value={editFormData.id_OffreStatus}
+                                        onChange={handleEditInputChange}
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    >
+                                        {offerStatuses.map(status => (
+                                            <option key={status.id} value={status.id}>
+                                                {status.Libelle}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex justify-end space-x-4 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsEditModalOpen(false);
+                                        setOfferToEdit(null);
+                                    }}
+                                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                    Update Offer
                                 </button>
                             </div>
                         </form>

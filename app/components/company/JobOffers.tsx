@@ -35,23 +35,36 @@ interface JobOffer {
     company?: {
         id: number;
         name: string;
+        address: string | null;
+        email: string;
+        date: string | null;
+        country: string | null;
+        ville: string | null;
+        domain: string;
+        is_verified: boolean;
+        website: string | null;
+        logo: string | null;
+        description: string | null;
+        id_rc: number;
+        created_at: string;
     };
     jobtype?: {
         id: number;
-        name: string;
+        Libelle: string;
     };
     offrestatus?: {
         id: number;
-        name: string;
+        Libelle: string;
     };
 }
 
 export default function JobOffers() {
     const { user } = useAuth();
     const [offers, setOffers] = useState<JobOffer[]>([]);
+    const [filteredOffers, setFilteredOffers] = useState<JobOffer[]>([]);
+    const [selectedFilter, setSelectedFilter] = useState<string>('all');
     const [jobTypes, setJobTypes] = useState<JobType[]>([]);
     const [offerStatuses, setOfferStatuses] = useState<OfferStatus[]>([]);
-    const [skills, setSkills] = useState<Skill[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingOffer, setEditingOffer] = useState<JobOffer | null>(null);
     const [formData, setFormData] = useState({
@@ -64,13 +77,57 @@ export default function JobOffers() {
         skills: [] as Skill[]
     });
 
-    // Fetch skills
-    const fetchSkills = async () => {
+    // Get unique statuses from offers
+    const getUniqueStatuses = () => {
+        const statuses = new Set<string>();
+        offers.forEach(offer => {
+            if (offer.offrestatus?.Libelle) {
+                statuses.add(offer.offrestatus.Libelle);
+            }
+        });
+        return Array.from(statuses);
+    };
+
+    // Filter offers based on selected status
+    useEffect(() => {
+        if (selectedFilter === 'all') {
+            setFilteredOffers(offers);
+        } else {
+            const filtered = offers.filter(offer =>
+                offer.offrestatus?.Libelle.toLowerCase() === selectedFilter.toLowerCase()
+            );
+            setFilteredOffers(filtered);
+        }
+    }, [selectedFilter, offers]);
+
+    // Fetch job offers
+    const fetchOffers = async () => {
         try {
-            const response = await axios.get('http://127.0.0.1:8000/api/skills');
-            setSkills(response.data);
+            const response = await axios.get('http://127.0.0.1:8000/api/offers', {
+                headers: {
+                    Authorization: `Bearer ${Cookies.get('access_token')}`
+                }
+            });
+
+            // Check if response has the expected structure
+            if (response.data && response.data.offers && Array.isArray(response.data.offers)) {
+                // Transform the offers to match our interface
+                const transformedOffers = response.data.offers.map((offer: any) => ({
+                    ...offer,
+                    skills: offer.skills ? offer.skills.split(',').map((skill: string) => ({
+                        name: skill.trim()
+                    })) : []
+                }));
+                setOffers(transformedOffers);
+            } else {
+                console.error('Invalid response format:', response.data);
+                setOffers([]);
+                toast.error('Invalid response format from server');
+            }
         } catch (error) {
-            toast.error('Failed to fetch skills');
+            console.error('Error fetching offers:', error);
+            setOffers([]);
+            toast.error('Failed to fetch job offers');
         }
     };
 
@@ -78,8 +135,16 @@ export default function JobOffers() {
     const fetchJobTypes = async () => {
         try {
             const response = await axios.get('http://127.0.0.1:8000/api/job-types');
-            setJobTypes(response.data);
+            if (Array.isArray(response.data)) {
+                setJobTypes(response.data);
+            } else {
+                console.error('Expected array of job types but got:', response.data);
+                setJobTypes([]);
+                toast.error('Invalid response format from server');
+            }
         } catch (error) {
+            console.error('Error fetching job types:', error);
+            setJobTypes([]);
             toast.error('Failed to fetch job types');
         }
     };
@@ -88,28 +153,21 @@ export default function JobOffers() {
     const fetchOfferStatuses = async () => {
         try {
             const response = await axios.get('http://127.0.0.1:8000/api/offer-statuses');
-            setOfferStatuses(response.data);
+            if (Array.isArray(response.data)) {
+                setOfferStatuses(response.data);
+            } else {
+                console.error('Expected array of offer statuses but got:', response.data);
+                setOfferStatuses([]);
+                toast.error('Invalid response format from server');
+            }
         } catch (error) {
+            console.error('Error fetching offer statuses:', error);
+            setOfferStatuses([]);
             toast.error('Failed to fetch offer statuses');
         }
     };
 
-    // Fetch job offers
-    const fetchOffers = async () => {
-        try {
-            const response = await axios.get('http://127.0.0.1:8000/api/company/job-offers', {
-                headers: {
-                    Authorization: `Bearer ${Cookies.get('access_token')}`
-                }
-            });
-            setOffers(response.data);
-        } catch (error) {
-            toast.error('Failed to fetch job offers');
-        }
-    };
-
     useEffect(() => {
-        fetchSkills();
         fetchJobTypes();
         fetchOfferStatuses();
         fetchOffers();
@@ -237,10 +295,27 @@ export default function JobOffers() {
                             <h1 className="text-2xl font-bold text-gray-900">Offer Manager</h1>
                             <div className="h-6 w-px bg-gray-300"></div>
                             <nav className="flex space-x-4">
-                                <a href="#" className="text-blue-600 font-medium">All Offers</a>
-                                <a href="#" className="text-gray-600 hover:text-blue-600">Active</a>
-                                <a href="#" className="text-gray-600 hover:text-blue-600">Draft</a>
-                                <a href="#" className="text-gray-600 hover:text-blue-600">Archived</a>
+                                <button
+                                    onClick={() => setSelectedFilter('all')}
+                                    className={`font-medium ${selectedFilter === 'all'
+                                        ? 'text-blue-600'
+                                        : 'text-gray-600 hover:text-blue-600'
+                                        }`}
+                                >
+                                    All Offers
+                                </button>
+                                {getUniqueStatuses().map((status) => (
+                                    <button
+                                        key={status}
+                                        onClick={() => setSelectedFilter(status)}
+                                        className={`font-medium ${selectedFilter === status
+                                            ? 'text-blue-600'
+                                            : 'text-gray-600 hover:text-blue-600'
+                                            }`}
+                                    >
+                                        {status}
+                                    </button>
+                                ))}
                             </nav>
                         </div>
                         <button
@@ -267,19 +342,19 @@ export default function JobOffers() {
 
             {/* Job Offers List */}
             <div className="space-y-6">
-                {offers.map((offer) => (
+                {filteredOffers.map((offer) => (
                     <div key={offer.id} className="bg-white rounded-lg shadow-md p-6">
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="text-lg font-semibold text-gray-900">{offer.title}</h3>
-                            <span className={`px-2 py-1 text-xs rounded-full ${offer.offrestatus?.name === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            <span className={`px-2 py-1 text-xs rounded-full ${offer.offrestatus?.Libelle === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                 }`}>
-                                {offer.offrestatus?.name}
+                                {offer.offrestatus?.Libelle}
                             </span>
                         </div>
                         <p className="text-gray-600 mb-4 line-clamp-3">{offer.Job_Descriptin}</p>
                         <div className="space-y-2 mb-4">
                             <p className="text-sm text-gray-500">
-                                <span className="font-medium">Type:</span> {offer.jobtype?.name}
+                                <span className="font-medium">Type:</span> {offer.jobtype?.Libelle}
                             </p>
                             <p className="text-sm text-gray-500">
                                 <span className="font-medium">Max Applications:</span> {offer.max_applications}

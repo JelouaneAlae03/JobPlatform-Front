@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -44,6 +44,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [company, setCompany] = useState<Company | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Initialize auth state from cookies
+    useEffect(() => {
+        const initializeAuth = () => {
+            const token = Cookies.get('access_token');
+            const userData = Cookies.get('user');
+            const userType = Cookies.get('user_type');
+
+            if (token && userData) {
+                try {
+                    const parsedUser = JSON.parse(userData);
+                    setUser(parsedUser);
+                    setIsAuthenticated(true);
+
+                    // If it's a company user, set company data
+                    if (userType === 'company') {
+                        setCompany(parsedUser);
+                    }
+                } catch (error) {
+                    console.error('Error parsing user data:', error);
+                    // Clear invalid cookies
+                    Cookies.remove('access_token');
+                    Cookies.remove('user');
+                    Cookies.remove('user_type');
+                }
+            }
+            setIsLoading(false);
+        };
+
+        initializeAuth();
+    }, []);
 
     const login = async (email: string, password: string, isCompany: boolean) => {
         try {
@@ -60,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     Cookies.set('user', JSON.stringify(response.data.user), { expires: 1 });
                     Cookies.set('user_type', response.data.user_type, { expires: 1 });
                     setUser(response.data.user);
+                    setCompany(response.data.user);
                     setIsAuthenticated(true);
                 }
             } else {
@@ -131,6 +164,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setCompany(null);
         setIsAuthenticated(false);
     };
+
+    if (isLoading) {
+        return <div>Loading...</div>; // Or your loading component
+    }
 
     return (
         <AuthContext.Provider

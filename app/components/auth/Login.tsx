@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link, useLocation } from 'react-router';
 import { useAuth } from '~/context/AuthContext';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
@@ -13,6 +13,10 @@ export default function Login() {
     const [error, setError] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Get the redirect path from location state or default to home
+    const from = location.state?.from || '/';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,11 +44,11 @@ export default function Login() {
                                 Welcome back, {response.data.user.name}
                             </div>
                             <div className="text-xs opacity-75 mt-1">
-                                Redirecting to dashboard...
+                                Redirecting...
                             </div>
                         </div>,
                         {
-                            duration: 3000,
+                            duration: 2000,
                             position: 'top-center',
                             style: {
                                 background: '#10B981',
@@ -57,13 +61,13 @@ export default function Login() {
                         }
                     );
 
-                    // Wait for 3 seconds before redirecting
+                    // Wait for 2 seconds before redirecting
                     setTimeout(() => {
-                        navigate('/');
-                    }, 3000);
+                        navigate(from, { replace: true });
+                    }, 2000);
                 }
             } else {
-                // Handle student login with axios
+                // Handle student login
                 const response = await axios.post('http://127.0.0.1:8000/api/login', {
                     student_checkbox: true,
                     email_student: email,
@@ -72,7 +76,7 @@ export default function Login() {
 
                 if (response.data && response.data.access_token) {
                     // Save access token and user data in cookies
-                    Cookies.set('access_token', response.data.access_token, { expires: 1 }); // Expires in 1 day
+                    Cookies.set('access_token', response.data.access_token, { expires: 1 });
                     Cookies.set('user', JSON.stringify(response.data.user), { expires: 1 });
                     Cookies.set('user_type', response.data.user_type, { expires: 1 });
 
@@ -84,11 +88,11 @@ export default function Login() {
                                 Welcome back, {response.data.user.first_name} {response.data.user.last_name}
                             </div>
                             <div className="text-xs opacity-75 mt-1">
-                                Redirecting to dashboard...
+                                Redirecting...
                             </div>
                         </div>,
                         {
-                            duration: 3000,
+                            duration: 2000,
                             position: 'top-center',
                             style: {
                                 background: '#10B981',
@@ -101,10 +105,10 @@ export default function Login() {
                         }
                     );
 
-                    // Wait for 3 seconds before redirecting
+                    // Wait for 2 seconds before redirecting
                     setTimeout(() => {
-                        navigate('/');
-                    }, 3000);
+                        navigate(from, { replace: true });
+                    }, 2000);
                 }
             }
         } catch (err: any) {

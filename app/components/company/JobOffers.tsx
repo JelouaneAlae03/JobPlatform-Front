@@ -76,6 +76,8 @@ export default function JobOffers() {
         id_OffreStatus: 1,
         skills: [] as Skill[]
     });
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [offerToDelete, setOfferToDelete] = useState<JobOffer | null>(null);
 
     // Get unique statuses from offers
     const getUniqueStatuses = () => {
@@ -284,6 +286,40 @@ export default function JobOffers() {
         setIsModalOpen(true);
     };
 
+    const handleDeleteClick = (offer: JobOffer) => {
+        setOfferToDelete(offer);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!offerToDelete) return;
+
+        try {
+            const response = await axios.delete(
+                `http://127.0.0.1:8000/api/deleteoffer/${offerToDelete.id}`,
+                {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${Cookies.get('access_token')}`
+                    }
+                }
+            );
+
+            if (response.data) {
+                toast.success('Offer deleted successfully');
+                // Remove the deleted offer from the state
+                setOffers(offers.filter(offer => offer.id !== offerToDelete.id));
+                setFilteredOffers(filteredOffers.filter(offer => offer.id !== offerToDelete.id));
+            }
+        } catch (error) {
+            console.error('Error deleting offer:', error);
+            toast.error('Failed to delete offer. Please try again.');
+        } finally {
+            setIsDeleteModalOpen(false);
+            setOfferToDelete(null);
+        }
+    };
+
     return (
         <div className="container mx-auto px-4 py-8">
             <Toaster />
@@ -386,7 +422,7 @@ export default function JobOffers() {
                                 Edit
                             </button>
                             <button
-                                onClick={() => handleDelete(offer.id)}
+                                onClick={() => handleDeleteClick(offer)}
                                 className="text-red-600 hover:text-red-800 focus:outline-none"
                             >
                                 Delete
@@ -545,6 +581,35 @@ export default function JobOffers() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {isDeleteModalOpen && offerToDelete && (
+                <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+                        <h3 className="text-lg font-semibold mb-4">Delete Offer</h3>
+                        <p className="text-gray-600 mb-6">
+                            Are you sure you want to delete the offer "{offerToDelete.title}"? This action cannot be undone.
+                        </p>
+                        <div className="flex justify-end space-x-4">
+                            <button
+                                onClick={() => {
+                                    setIsDeleteModalOpen(false);
+                                    setOfferToDelete(null);
+                                }}
+                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteConfirm}
+                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

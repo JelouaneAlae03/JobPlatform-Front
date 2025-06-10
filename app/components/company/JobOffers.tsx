@@ -147,7 +147,11 @@ export default function JobOffers() {
     // Fetch job types
     const fetchJobTypes = async () => {
         try {
-            const response = await axios.get('http://127.0.0.1:8000/api/job-types');
+            const response = await axios.get('http://127.0.0.1:8000/api/jobtypes', {
+                headers: {
+                    Authorization: `Bearer ${Cookies.get('access_token')}`
+                }
+            });
             if (Array.isArray(response.data)) {
                 setJobTypes(response.data);
             } else {
@@ -165,7 +169,11 @@ export default function JobOffers() {
     // Fetch offer statuses
     const fetchOfferStatuses = async () => {
         try {
-            const response = await axios.get('http://127.0.0.1:8000/api/offer-statuses');
+            const response = await axios.get('http://127.0.0.1:8000/api/offrestatus', {
+                headers: {
+                    Authorization: `Bearer ${Cookies.get('access_token')}`
+                }
+            });
             if (Array.isArray(response.data)) {
                 setOfferStatuses(response.data);
             } else {

@@ -180,12 +180,6 @@ export default function JobListings() {
                             <option value="part-time">Part-time</option>
                             <option value="contract">Contract</option>
                         </select>
-                        <select className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">All Locations</option>
-                            <option value="remote">Remote</option>
-                            <option value="onsite">On-site</option>
-                            <option value="hybrid">Hybrid</option>
-                        </select>
                     </div>
                 </div>
             </div>

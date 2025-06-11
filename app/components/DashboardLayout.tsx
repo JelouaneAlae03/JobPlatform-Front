@@ -10,6 +10,7 @@ const navigationItems = [
     { name: 'My Applications', icon: '📝', path: '/applications' },
     { name: 'Saved Jobs', icon: '🔖', path: '/saved' },
     { name: 'Profile', icon: '👤', path: '/profile' },
+    { name: 'Profile Search', icon: '🔍', path: '/profile-search' },
     { name: 'Settings', icon: '⚙️', path: '/settings' },
 ];
 

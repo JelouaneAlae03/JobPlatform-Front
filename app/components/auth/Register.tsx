@@ -25,7 +25,8 @@ export default function Register() {
         last_name: '',
         password: '',
         password_confirmation: '',
-        phone: ''
+        phone: '',
+        skills: ''
     });
     const [error, setError] = useState('');
     const { register } = useAuth();
@@ -68,7 +69,8 @@ export default function Register() {
                     email: formData.email,
                     password: formData.password,
                     password_confirmation: formData.password_confirmation,
-                    phone: formData.phone
+                    phone: formData.phone,
+                    skills: formData.skills
                 };
                 response = await register(studentData);
             }
@@ -333,6 +335,17 @@ export default function Register() {
                                         className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                                         placeholder="Phone Number"
                                         value={formData.phone}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div>
+                                    <input
+                                        name="skills"
+                                        type="text"
+                                        required
+                                        className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                                        placeholder="Skills (comma-separated)"
+                                        value={formData.skills}
                                         onChange={handleChange}
                                     />
                                 </div>

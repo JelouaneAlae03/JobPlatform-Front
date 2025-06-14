@@ -1,405 +1,282 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import { useAuth } from '~/context/AuthContext';
+import { Toaster, toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router';
+
+interface CompanyData {
+    name: string;
+    email: string;
+    domain: string;
+    address: string;
+    country: string;
+    ville: string;
+    rc: string;
+    password: string;
+    password_confirmation: string;
+}
 
 export default function Settings() {
-    const { user } = useAuth();
-    const [settings, setSettings] = useState({
-        emailNotifications: true,
-        jobAlerts: true,
-        darkMode: false,
-        language: 'en',
-        timezone: 'UTC',
-        privacySettings: {
-            profileVisibility: 'public',
-            showEmail: false,
-            showPhone: false
-        }
+    const { user, company } = useAuth();
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState<CompanyData>({
+        name: '',
+        email: '',
+        domain: '',
+        address: '',
+        country: '',
+        ville: '',
+        rc: '',
+        password: '',
+        password_confirmation: ''
     });
+    const [isLoading, setIsLoading] = useState(false);
+    const [isFetching, setIsFetching] = useState(true);
 
-    const [passwordData, setPasswordData] = useState({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-    });
-
-    const [contactData, setContactData] = useState({
-        email: user?.email || '',
-        phone: user?.phone || '',
-        currentPassword: '' // For verification when changing contact info
-    });
-
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-    const handleToggleChange = (setting: string) => {
-        setSettings(prev => ({
-            ...prev,
-            [setting]: !prev[setting as keyof typeof prev]
-        }));
-    };
-
-    const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setSettings(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handlePrivacyChange = (setting: string) => {
-        setSettings(prev => ({
-            ...prev,
-            privacySettings: {
-                ...prev.privacySettings,
-                [setting]: !prev.privacySettings[setting as keyof typeof prev.privacySettings]
+    useEffect(() => {
+        const fetchCompanyData = async () => {
+            if (!user?.id) {
+                toast.error('Please log in to access company settings');
+                navigate('/login');
+                return;
             }
-        }));
-    };
 
-    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+            try {
+                const headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Cookies.get('access_token')}`
+                };
+
+                // First try to get the company profile
+                const response = await axios.get('http://127.0.0.1:8000/api/company/profile', { headers });
+                const companyData = response.data;
+
+                setFormData(prev => ({
+                    ...prev,
+                    name: companyData.name || '',
+                    email: companyData.email || '',
+                    domain: companyData.domain || '',
+                    address: companyData.address || '',
+                    country: companyData.country || '',
+                    ville: companyData.ville || '',
+                    rc: companyData.rc || ''
+                }));
+            } catch (error: any) {
+                console.error('Error fetching company data:', error);
+                if (error.response?.status === 401) {
+                    toast.error('Please log in to access company settings');
+                    navigate('/login');
+                } else {
+                    toast.error(error.response?.data?.message || 'Failed to fetch company information');
+                }
+            } finally {
+                setIsFetching(false);
+            }
+        };
+
+        fetchCompanyData();
+    }, [user?.id, navigate]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setPasswordData(prev => ({
+        setFormData(prev => ({
             ...prev,
             [name]: value
         }));
     };
 
-    const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setContactData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handlePasswordSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement password change logic
-        console.log('Password change requested:', passwordData);
+        setIsLoading(true);
+
+        try {
+            const headers = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Cookies.get('access_token')}`
+            };
+
+            // Create a copy of formData without empty password fields
+            const submitData: Partial<CompanyData> = { ...formData };
+            if (!submitData.password) {
+                delete submitData.password;
+                delete submitData.password_confirmation;
+            }
+
+            const response = await axios.put('http://127.0.0.1:8000/api/company/profile', submitData, { headers });
+
+            toast.success('Company information updated successfully');
+
+            // Clear password fields after successful update
+            setFormData(prev => ({
+                ...prev,
+                password: '',
+                password_confirmation: ''
+            }));
+
+        } catch (error: any) {
+            console.error('Error updating company information:', error);
+            if (error.response?.status === 401) {
+                toast.error('Please log in to update company settings');
+                navigate('/login');
+            } else if (error.response?.data?.errors) {
+                const errors = error.response.data.errors;
+                Object.values(errors).forEach((errorMessages: any) => {
+                    toast.error(errorMessages[0]);
+                });
+            } else {
+                toast.error(error.response?.data?.message || 'Failed to update company information');
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleContactSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        // TODO: Implement contact info update logic
-        console.log('Contact info update requested:', contactData);
-    };
-
-    const handleDeleteAccount = () => {
-        // TODO: Implement account deletion logic
-        console.log('Account deletion requested');
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        // TODO: Implement settings update logic
-        console.log('Settings updated:', settings);
-    };
+    if (isFetching) {
+        return (
+            <div className="max-w-4xl mx-auto">
+                <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
+                    <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <span className="ml-3 text-blue-600">Loading company information...</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto">
+            <Toaster position="top-right" />
+
             {/* Header Section */}
             <div className="bg-white p-4 rounded-lg shadow-md mb-6 border border-blue-100">
-                <h2 className="text-xl font-semibold text-blue-900">Settings</h2>
-                <p className="text-blue-600 mt-1">Customize your account preferences</p>
+                <h2 className="text-xl font-semibold text-blue-900">Company Settings</h2>
+                <p className="text-blue-600 mt-1">Update your company information</p>
             </div>
 
             {/* Settings Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Account Settings */}
                 <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-4">Account Settings</h3>
-                    <div className="space-y-6">
-                        {/* Contact Information Section */}
+                    <h3 className="text-lg font-semibold text-blue-900 mb-4">Company Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <h4 className="text-sm font-medium text-blue-900 mb-4">Contact Information</h4>
-                            <form onSubmit={handleContactSubmit} className="space-y-4">
-                                <div>
-                                    <label htmlFor="email" className="block text-sm font-medium text-blue-900">Email Address</label>
-                                    <input
-                                        type="email"
-                                        id="email"
-                                        name="email"
-                                        value={contactData.email}
-                                        onChange={handleContactChange}
-                                        className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="phone" className="block text-sm font-medium text-blue-900">Phone Number</label>
-                                    <input
-                                        type="tel"
-                                        id="phone"
-                                        name="phone"
-                                        value={contactData.phone}
-                                        onChange={handleContactChange}
-                                        className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="contactPassword" className="block text-sm font-medium text-blue-900">Current Password (for verification)</label>
-                                    <input
-                                        type="password"
-                                        id="contactPassword"
-                                        name="currentPassword"
-                                        value={contactData.currentPassword}
-                                        onChange={handleContactChange}
-                                        className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                                <div className="flex justify-end">
-                                    <button
-                                        type="submit"
-                                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
-                                    >
-                                        Update Contact Information
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        {/* Change Password Section */}
-                        <div>
-                            <h4 className="text-sm font-medium text-blue-900 mb-4">Change Password</h4>
-                            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                                <div>
-                                    <label htmlFor="currentPassword" className="block text-sm font-medium text-blue-900">Current Password</label>
-                                    <input
-                                        type="password"
-                                        id="currentPassword"
-                                        name="currentPassword"
-                                        value={passwordData.currentPassword}
-                                        onChange={handlePasswordChange}
-                                        className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="newPassword" className="block text-sm font-medium text-blue-900">New Password</label>
-                                    <input
-                                        type="password"
-                                        id="newPassword"
-                                        name="newPassword"
-                                        value={passwordData.newPassword}
-                                        onChange={handlePasswordChange}
-                                        className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-blue-900">Confirm New Password</label>
-                                    <input
-                                        type="password"
-                                        id="confirmPassword"
-                                        name="confirmPassword"
-                                        value={passwordData.confirmPassword}
-                                        onChange={handlePasswordChange}
-                                        className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-                                <div className="flex justify-end">
-                                    <button
-                                        type="submit"
-                                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
-                                    >
-                                        Update Password
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        {/* Account Deletion Section */}
-                        <div className="border-t border-blue-100 pt-6">
-                            <h4 className="text-sm font-medium text-red-600 mb-4">Danger Zone</h4>
-                            <div className="bg-red-50 p-4 rounded-md">
-                                <p className="text-sm text-red-600 mb-4">
-                                    Once you delete your account, there is no going back. Please be certain.
-                                </p>
-                                {!showDeleteConfirm ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowDeleteConfirm(true)}
-                                        className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
-                                    >
-                                        Delete Account
-                                    </button>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <p className="text-sm text-red-600">
-                                            Are you sure you want to delete your account? This action cannot be undone.
-                                        </p>
-                                        <div className="flex space-x-4">
-                                            <button
-                                                type="button"
-                                                onClick={handleDeleteAccount}
-                                                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
-                                            >
-                                                Yes, Delete My Account
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowDeleteConfirm(false)}
-                                                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 cursor-pointer"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Notification Settings */}
-                <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-4">Notification Settings</h3>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h4 className="text-sm font-medium text-blue-900">Email Notifications</h4>
-                                <p className="text-sm text-blue-600">Receive email updates about your applications</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={settings.emailNotifications}
-                                    onChange={() => handleToggleChange('emailNotifications')}
-                                    className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-blue-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-blue-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                            </label>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h4 className="text-sm font-medium text-blue-900">Job Alerts</h4>
-                                <p className="text-sm text-blue-600">Get notified about new job opportunities</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={settings.jobAlerts}
-                                    onChange={() => handleToggleChange('jobAlerts')}
-                                    className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-blue-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-blue-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Appearance Settings */}
-                <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-4">Appearance</h3>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h4 className="text-sm font-medium text-blue-900">Dark Mode</h4>
-                                <p className="text-sm text-blue-600">Switch between light and dark theme</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={settings.darkMode}
-                                    onChange={() => handleToggleChange('darkMode')}
-                                    className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-blue-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-blue-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                            </label>
-                        </div>
-                        <div>
-                            <label htmlFor="language" className="block text-sm font-medium text-blue-900">Language</label>
-                            <select
-                                id="language"
-                                name="language"
-                                value={settings.language}
-                                onChange={handleSelectChange}
+                            <label htmlFor="name" className="block text-sm font-medium text-blue-900">Company Name</label>
+                            <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
                                 className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="en">English</option>
-                                <option value="es">Spanish</option>
-                                <option value="fr">French</option>
-                                <option value="de">German</option>
-                            </select>
+                            />
                         </div>
                         <div>
-                            <label htmlFor="timezone" className="block text-sm font-medium text-blue-900">Timezone</label>
-                            <select
-                                id="timezone"
-                                name="timezone"
-                                value={settings.timezone}
-                                onChange={handleSelectChange}
+                            <label htmlFor="email" className="block text-sm font-medium text-blue-900">Email</label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
                                 className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="UTC">UTC</option>
-                                <option value="EST">Eastern Time</option>
-                                <option value="CST">Central Time</option>
-                                <option value="PST">Pacific Time</option>
-                            </select>
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="domain" className="block text-sm font-medium text-blue-900">Domain</label>
+                            <input
+                                type="text"
+                                id="domain"
+                                name="domain"
+                                value={formData.domain}
+                                onChange={handleChange}
+                                className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="rc" className="block text-sm font-medium text-blue-900">RC Number</label>
+                            <input
+                                type="text"
+                                id="rc"
+                                name="rc"
+                                value={formData.rc}
+                                onChange={handleChange}
+                                className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="address" className="block text-sm font-medium text-blue-900">Address</label>
+                            <input
+                                type="text"
+                                id="address"
+                                name="address"
+                                value={formData.address}
+                                onChange={handleChange}
+                                className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="country" className="block text-sm font-medium text-blue-900">Country</label>
+                            <input
+                                type="text"
+                                id="country"
+                                name="country"
+                                value={formData.country}
+                                onChange={handleChange}
+                                className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="ville" className="block text-sm font-medium text-blue-900">City</label>
+                            <input
+                                type="text"
+                                id="ville"
+                                name="ville"
+                                value={formData.ville}
+                                onChange={handleChange}
+                                className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
                         </div>
                     </div>
                 </div>
 
-                {/* Privacy Settings */}
                 <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-4">Privacy Settings</h3>
-                    <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-4">Change Password</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="profileVisibility" className="block text-sm font-medium text-blue-900">Profile Visibility</label>
-                            <select
-                                id="profileVisibility"
-                                name="profileVisibility"
-                                value={settings.privacySettings.profileVisibility}
-                                onChange={(e) => setSettings(prev => ({
-                                    ...prev,
-                                    privacySettings: {
-                                        ...prev.privacySettings,
-                                        profileVisibility: e.target.value
-                                    }
-                                }))}
+                            <label htmlFor="password" className="block text-sm font-medium text-blue-900">New Password</label>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
                                 className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            >
-                                <option value="public">Public</option>
-                                <option value="private">Private</option>
-                                <option value="connections">Connections Only</option>
-                            </select>
+                            />
                         </div>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h4 className="text-sm font-medium text-blue-900">Show Email</h4>
-                                <p className="text-sm text-blue-600">Display your email on your profile</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={settings.privacySettings.showEmail}
-                                    onChange={() => handlePrivacyChange('showEmail')}
-                                    className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-blue-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-blue-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                            </label>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h4 className="text-sm font-medium text-blue-900">Show Phone</h4>
-                                <p className="text-sm text-blue-600">Display your phone number on your profile</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={settings.privacySettings.showPhone}
-                                    onChange={() => handlePrivacyChange('showPhone')}
-                                    className="sr-only peer"
-                                />
-                                <div className="w-11 h-6 bg-blue-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-blue-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                            </label>
+                        <div>
+                            <label htmlFor="password_confirmation" className="block text-sm font-medium text-blue-900">Confirm New Password</label>
+                            <input
+                                type="password"
+                                id="password_confirmation"
+                                name="password_confirmation"
+                                value={formData.password_confirmation}
+                                onChange={handleChange}
+                                className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
                         </div>
                     </div>
                 </div>
 
-                {/* Submit Button */}
                 <div className="flex justify-end">
                     <button
                         type="submit"
-                        className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                        disabled={isLoading}
+                        className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Save Settings
+                        {isLoading ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>
             </form>

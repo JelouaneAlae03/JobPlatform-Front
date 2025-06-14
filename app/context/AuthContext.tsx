@@ -27,6 +27,12 @@ export interface User {
     skills?: string[];
     experience?: string;
     education?: string;
+    // Company specific fields
+    domain?: string;
+    address?: string;
+    country?: string;
+    ville?: string;
+    rc?: string;
 }
 
 interface AuthContextType {

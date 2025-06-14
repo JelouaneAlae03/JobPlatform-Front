@@ -1,197 +1,229 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Pagination from './Pagination';
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import { toast } from 'react-hot-toast';
 
-// Mock job data - replace with actual API call
-const mockJobs = [
-    {
-        id: 1,
-        title: "Senior Software Engineer",
-        company: "Tech Solutions Inc.",
-        location: "New York, NY",
-        salary: "$120,000 - $150,000",
-        type: "Full-time",
-        posted: "2 days ago",
-        description: "We're looking for a Senior Software Engineer to join our team and help build scalable applications...",
-        requirements: ["5+ years of experience", "React/Node.js", "AWS", "Microservices"]
-    },
-    {
-        id: 2,
-        title: "Frontend Developer",
-        company: "Digital Innovations",
-        location: "Remote",
-        salary: "$90,000 - $110,000",
-        type: "Full-time",
-        posted: "1 day ago",
-        description: "Join our team as a Frontend Developer and work on cutting-edge web applications...",
-        requirements: ["3+ years of experience", "React", "TypeScript", "CSS/SCSS"]
-    },
-    {
-        id: 3,
-        title: "Full Stack Developer",
-        company: "StartUp Vision",
-        location: "San Francisco, CA",
-        salary: "$100,000 - $130,000",
-        type: "Full-time",
-        posted: "3 days ago",
-        description: "Exciting opportunity for a Full Stack Developer to work on innovative projects...",
-        requirements: ["4+ years of experience", "JavaScript", "Python", "SQL"]
-    },
-    {
-        id: 1,
-        title: "Senior Software Engineer",
-        company: "Tech Solutions Inc.",
-        location: "New York, NY",
-        salary: "$120,000 - $150,000",
-        type: "Full-time",
-        posted: "2 days ago",
-        description: "We're looking for a Senior Software Engineer to join our team and help build scalable applications...",
-        requirements: ["5+ years of experience", "React/Node.js", "AWS", "Microservices"]
-    },
-    {
-        id: 2,
-        title: "Frontend Developer",
-        company: "Digital Innovations",
-        location: "Remote",
-        salary: "$90,000 - $110,000",
-        type: "Full-time",
-        posted: "1 day ago",
-        description: "Join our team as a Frontend Developer and work on cutting-edge web applications...",
-        requirements: ["3+ years of experience", "React", "TypeScript", "CSS/SCSS"]
-    },
-    {
-        id: 3,
-        title: "Full Stack Developer",
-        company: "StartUp Vision",
-        location: "San Francisco, CA",
-        salary: "$100,000 - $130,000",
-        type: "Full-time",
-        posted: "3 days ago",
-        description: "Exciting opportunity for a Full Stack Developer to work on innovative projects...",
-        requirements: ["4+ years of experience", "JavaScript", "Python", "SQL"]
-    },
-    {
-        id: 1,
-        title: "Senior Software Engineer",
-        company: "Tech Solutions Inc.",
-        location: "New York, NY",
-        salary: "$120,000 - $150,000",
-        type: "Full-time",
-        posted: "2 days ago",
-        description: "We're looking for a Senior Software Engineer to join our team and help build scalable applications...",
-        requirements: ["5+ years of experience", "React/Node.js", "AWS", "Microservices"]
-    },
-    {
-        id: 2,
-        title: "Frontend Developer",
-        company: "Digital Innovations",
-        location: "Remote",
-        salary: "$90,000 - $110,000",
-        type: "Full-time",
-        posted: "1 day ago",
-        description: "Join our team as a Frontend Developer and work on cutting-edge web applications...",
-        requirements: ["3+ years of experience", "React", "TypeScript", "CSS/SCSS"]
-    },
-    {
-        id: 3,
-        title: "Full Stack Developer",
-        company: "StartUp Vision",
-        location: "San Francisco, CA",
-        salary: "$100,000 - $130,000",
-        type: "Full-time",
-        posted: "3 days ago",
-        description: "Exciting opportunity for a Full Stack Developer to work on innovative projects...",
-        requirements: ["4+ years of experience", "JavaScript", "Python", "SQL"]
-    },
-    {
-        id: 1,
-        title: "Senior Software Engineer",
-        company: "Tech Solutions Inc.",
-        location: "New York, NY",
-        salary: "$120,000 - $150,000",
-        type: "Full-time",
-        posted: "2 days ago",
-        description: "We're looking for a Senior Software Engineer to join our team and help build scalable applications...",
-        requirements: ["5+ years of experience", "React/Node.js", "AWS", "Microservices"]
-    },
-    {
-        id: 2,
-        title: "Frontend Developer",
-        company: "Digital Innovations",
-        location: "Remote",
-        salary: "$90,000 - $110,000",
-        type: "Full-time",
-        posted: "1 day ago",
-        description: "Join our team as a Frontend Developer and work on cutting-edge web applications...",
-        requirements: ["3+ years of experience", "React", "TypeScript", "CSS/SCSS"]
-    },
-    {
-        id: 3,
-        title: "Full Stack Developer",
-        company: "StartUp Vision",
-        location: "San Francisco, CA",
-        salary: "$100,000 - $130,000",
-        type: "Full-time",
-        posted: "3 days ago",
-        description: "Exciting opportunity for a Full Stack Developer to work on innovative projects...",
-        requirements: ["4+ years of experience", "JavaScript", "Python", "SQL"]
-    }
-];
+interface Job {
+    id: number;
+    title: string;
+    company: string;
+    location: string;
+    salary: string;
+    type: string;
+    posted: string;
+    description: string;
+    requirements: string[];
+    company_email: string;
+}
+
+interface PaginationData {
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+}
 
 export default function JobListings() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchInput, setSearchInput] = useState('');
+    const [jobs, setJobs] = useState<Job[]>([]);
+    const [savedOffers, setSavedOffers] = useState<number[]>([]);
+    const [pagination, setPagination] = useState<PaginationData>({
+        total: 0,
+        per_page: 10,
+        current_page: 1,
+        last_page: 1
+    });
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState('');
 
-    // Calculate pagination
-    const totalPages = Math.ceil(mockJobs.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentJobs = mockJobs.slice(startIndex, endIndex);
+    useEffect(() => {
+        setSearchInput(searchQuery);
+    }, []);
+
+    useEffect(() => {
+        fetchJobs();
+    }, [currentPage, itemsPerPage, searchQuery]);
+
+    useEffect(() => {
+        const checkSavedStatus = async () => {
+            const token = Cookies.get('access_token');
+            if (!token) return;
+
+            try {
+                const response = await axios.get('http://127.0.0.1:8000/api/saved-offers', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const savedOfferIds = response.data.map((saved: any) => saved.id_offre);
+                setSavedOffers(savedOfferIds);
+            } catch (error) {
+                console.error('Error fetching saved offers:', error);
+            }
+        };
+
+        checkSavedStatus();
+    }, []);
+
+    const fetchJobs = async () => {
+        try {
+            setIsLoading(true);
+            const response = await axios.get('http://127.0.0.1:8000/api/job-listings', {
+                params: {
+                    page: currentPage,
+                    per_page: itemsPerPage,
+                    search: searchQuery
+                },
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Cookies.get('access_token')}`
+                }
+            });
+
+            setJobs(response.data.jobs);
+            setPagination(response.data.pagination);
+            setError('');
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to fetch job listings');
+            console.error('Error fetching jobs:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
-        // Scroll to top of job listings
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleItemsPerPageChange = (newItemsPerPage: number) => {
         setItemsPerPage(newItemsPerPage);
-        setCurrentPage(1); // Reset to first page when changing items per page
+        setCurrentPage(1);
     };
+
+    const handleSaveOffer = async (offerId: number) => {
+        const token = Cookies.get('access_token');
+
+        if (!token) {
+            toast.error('Please login to save offers');
+            window.location.href = '/login';
+            return;
+        }
+
+        try {
+            if (savedOffers.includes(offerId)) {
+                // Unsave the offer
+                const response = await axios.delete(
+                    `http://127.0.0.1:8000/api/saved-offers/${offerId}`,
+                    {
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
+                );
+
+                if (response.data.saved === false) {
+                    setSavedOffers(prev => prev.filter(id => id !== offerId));
+                    toast.success('Offer unsaved successfully!');
+                }
+            } else {
+                // Save the offer
+                const response = await axios.post(
+                    'http://127.0.0.1:8000/api/saved-offers',
+                    { id_offre: offerId },
+                    {
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
+                );
+
+                if (response.data.saved) {
+                    setSavedOffers(prev => [...prev, offerId]);
+                    toast.success('Offer saved successfully!');
+                }
+            }
+        } catch (error: any) {
+            if (error.response?.status === 401) {
+                toast.error('Please login to save offers');
+                window.location.href = '/login';
+            } else {
+                toast.error(error.response?.data?.message || 'Failed to save/unsave offer');
+            }
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-[400px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-red-50 p-4 rounded-md">
+                <p className="text-red-700">{error}</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
             {/* Search and Filter Section */}
             <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
+                    <div className="flex-1 flex gap-2">
                         <input
                             type="text"
                             placeholder="Search jobs..."
                             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    setSearchQuery(searchInput);
+                                    setCurrentPage(1);
+                                }
+                            }}
                         />
-                    </div>
-                    <div className="flex gap-2">
-                        <select className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">All Types</option>
-                            <option value="full-time">Full-time</option>
-                            <option value="part-time">Part-time</option>
-                            <option value="contract">Contract</option>
-                        </select>
+                        <button
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onClick={() => {
+                                setSearchQuery(searchInput);
+                                setCurrentPage(1);
+                            }}
+                        >
+                            Search
+                        </button>
                     </div>
                 </div>
             </div>
 
             {/* Job Listings */}
             <div className="space-y-4">
-                {currentJobs.map((job) => (
+                {jobs.map((job) => (
                     <div key={job.id} className="bg-white rounded-lg shadow-md p-4 sm:p-6 hover:shadow-lg transition-shadow cursor-pointer">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex-1">
                                 <h3 className="text-lg sm:text-xl font-semibold text-blue-900">{job.title}</h3>
                                 <p className="text-gray-600">{job.company}</p>
+                                <p className="text-gray-500 text-sm mt-1">
+                                    <span className="font-medium">Email:</span> {job.company_email}
+                                </p>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
@@ -222,11 +254,24 @@ export default function JobListings() {
                                 <span>Posted {job.posted}</span>
                             </div>
                             <div className="flex gap-2">
-                                <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer">
+                                <button
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+                                    onClick={() => {
+                                        const subject = `Candidature au poste de ${job.title}`;
+                                        const mailtoLink = `mailto:${job.company_email}?subject=${encodeURIComponent(subject)}`;
+                                        window.location.href = mailtoLink;
+                                    }}
+                                >
                                     Apply Now
                                 </button>
-                                <button className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer">
-                                    Save
+                                <button
+                                    className={`px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer ${savedOffers.includes(job.id)
+                                        ? 'border-green-600 text-green-600 hover:bg-green-50 focus:ring-green-500'
+                                        : 'border-blue-600 text-blue-600 hover:bg-blue-50 focus:ring-blue-500'
+                                        }`}
+                                    onClick={() => handleSaveOffer(job.id)}
+                                >
+                                    {savedOffers.includes(job.id) ? 'Saved' : 'Save'}
                                 </button>
                             </div>
                         </div>
@@ -237,10 +282,10 @@ export default function JobListings() {
             {/* Pagination */}
             <div className="mt-6">
                 <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
+                    currentPage={pagination.current_page}
+                    totalPages={pagination.last_page}
                     onPageChange={handlePageChange}
-                    itemsPerPage={itemsPerPage}
+                    itemsPerPage={pagination.per_page}
                     onItemsPerPageChange={handleItemsPerPageChange}
                 />
             </div>

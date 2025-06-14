@@ -66,8 +66,8 @@ export default function Register() {
                     student_checkbox: true,
                     first_name: formData.first_name,
                     last_name: formData.last_name,
-                    email: formData.email,
-                    password: formData.password,
+                    email_student: formData.email,
+                    password_student: formData.password,
                     password_confirmation: formData.password_confirmation,
                     phone: formData.phone,
                     skills: formData.skills

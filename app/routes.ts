@@ -7,7 +7,7 @@ export default [
     route("register", "routes/auth/register.tsx"),
     route("applications", "routes/applications.tsx"),
     route("saved", "routes/saved.tsx"),
-    route("profile", "routes/profile.tsx"),
+    route("company-profile", "routes/profile.tsx"),
     route("profile-search", "routes/profile-search.tsx"),
     route("settings", "routes/settings.tsx"),
     route("offer-manager", "routes/company/job-offers.tsx")

@@ -9,7 +9,7 @@ const navigationItems = [
     { name: 'Offer Manager', icon: '💼', path: '/offer-manager' },
     { name: 'My Applications', icon: '📝', path: '/applications' },
     { name: 'Saved Jobs', icon: '🔖', path: '/saved' },
-    { name: 'Profile', icon: '👤', path: '/profile' },
+    { name: 'Company Profile', icon: '👤', path: '/company-profile' },
     { name: 'Profile Search', icon: '🔍', path: '/profile-search' },
     { name: 'Settings', icon: '⚙️', path: '/settings' },
 ];

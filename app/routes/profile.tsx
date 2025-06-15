@@ -3,7 +3,7 @@ import Profile from '~/components/Profile';
 
 export default function ProfilePage() {
     return (
-        <DashboardLayout title="Profile">
+        <DashboardLayout title="Company Profile">
             <Profile />
         </DashboardLayout>
     );

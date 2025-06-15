@@ -8,6 +8,7 @@ export default [
     route("applications", "routes/applications.tsx"),
     route("saved", "routes/saved.tsx"),
     route("company-profile", "routes/profile.tsx"),
+    route("student-profile", "routes/student-profile.tsx"),
     route("profile-search", "routes/profile-search.tsx"),
     route("settings", "routes/settings.tsx"),
     route("offer-manager", "routes/company/job-offers.tsx")

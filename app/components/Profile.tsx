@@ -50,9 +50,14 @@ export default function Profile() {
                 };
 
                 const response = await axios.get('http://127.0.0.1:8000/api/company/profile', { headers });
+                // Format the date to YYYY-MM-DD for the input field
+                const formattedData = {
+                    ...response.data,
+                    date: response.data.date ? new Date(response.data.date).toISOString().split('T')[0] : ''
+                };
                 setFormData(prevData => ({
                     ...prevData,
-                    ...response.data
+                    ...formattedData
                 }));
             } catch (error) {
                 console.error('Error fetching company data:', error);
@@ -85,6 +90,12 @@ export default function Profile() {
             if (!submitData.password) {
                 delete submitData.password;
                 delete submitData.password_confirmation;
+            }
+
+            // Format the date to YYYY-MM-DD
+            if (submitData.date) {
+                const date = new Date(submitData.date);
+                submitData.date = date.toISOString().split('T')[0];
             }
 
             console.log('Sending update request with data:', submitData);

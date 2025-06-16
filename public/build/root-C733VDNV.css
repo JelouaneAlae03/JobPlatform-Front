@@ -1,0 +1,34 @@
+/* css-side-effects-plugin-ns:app\app.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@theme { --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }
+html,
+body {
+  @apply bg-white dark:bg-gray-950;
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
+  }
+}
+input,
+textarea,
+select {
+  @apply text-black px-4 py-2;
+}
+input[type=date] {
+  @apply cursor-pointer;
+  position: relative;
+}
+input[type=date]::-webkit-calendar-picker-indicator {
+  @apply cursor-pointer;
+  padding: 0.5rem;
+  margin-right: -0.5rem;
+  filter: invert(0.5);
+}
+input[type=date]::-webkit-datetime-edit {
+  @apply px-2;
+}
+input[type=date]:focus {
+  @apply outline-none ring-2 ring-blue-500 border-blue-500;
+}
+/*# sourceMappingURL=/build/root-C733VDNV.css.map */

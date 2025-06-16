@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["css-side-effects-plugin-ns:app\\app.css"],
+  "sourcesContent": ["@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n@theme {\n  --font-sans: \"Inter\", ui-sans-serif, system-ui, sans-serif,\n    \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\";\n}\n\nhtml,\nbody {\n  @apply bg-white dark:bg-gray-950;\n\n  @media (prefers-color-scheme: dark) {\n    color-scheme: dark;\n  }\n}\n\n/* Global input text color */\ninput,\ntextarea,\nselect {\n  @apply text-black px-4 py-2;\n}\n\n/* Date input styles */\ninput[type=\"date\"] {\n  @apply cursor-pointer;\n  position: relative;\n}\n\ninput[type=\"date\"]::-webkit-calendar-picker-indicator {\n  @apply cursor-pointer;\n  padding: 0.5rem;\n  margin-right: -0.5rem;\n  filter: invert(0.5);\n}\n\ninput[type=\"date\"]::-webkit-datetime-edit {\n  @apply px-2;\n}\n\ninput[type=\"date\"]:focus {\n  @apply outline-none ring-2 ring-blue-500 border-blue-500;\n}"],
+  "mappings": ";AAAA;AACA;AACA;AAEA;AAKA;AAAA;AAEE;AAEA;AACE;AAAA;AAAA;AAKJ;AAAA;AAAA;AAGE;AAAA;AAIF;AACE;AACA;AAAA;AAGF;AACE;AACA;AACA;AACA;AAAA;AAGF;AACE;AAAA;AAGF;AACE;AAAA;",
+  "names": []
+}

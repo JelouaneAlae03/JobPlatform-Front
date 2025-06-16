@@ -2,15 +2,21 @@ import { useAuth } from '~/context/AuthContext';
 import { useNavigate, Link } from 'react-router';
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
+import Cookies from 'js-cookie';
 
-// Sidebar navigation items
-const navigationItems = [
+// Role-based navigation items
+const studentNavigationItems = [
     { name: 'Dashboard', icon: '📊', path: '/' },
-    { name: 'Offer Manager', icon: '💼', path: '/offer-manager' },
-    { name: 'My Applications', icon: '📝', path: '/applications' },
+    // { name: 'My Applications', icon: '📝', path: '/applications' },
     { name: 'Saved Jobs', icon: '🔖', path: '/saved' },
-    { name: 'Company Profile', icon: '👤', path: '/company-profile' },
-    { name: 'Student Profile', icon: '👨‍🎓', path: '/student-profile' },
+    { name: 'Profile', icon: '👨‍🎓', path: '/student-profile' },
+    { name: 'Settings', icon: '⚙️', path: '/settings' },
+];
+
+const companyNavigationItems = [
+    // { name: 'Dashboard', icon: '📊', path: '/' },
+    { name: 'Offer Manager', icon: '💼', path: '/offer-manager' },
+    { name: 'Company Info', icon: '👤', path: '/company-profile' },
     { name: 'Profile Search', icon: '🔍', path: '/profile-search' },
     { name: 'Settings', icon: '⚙️', path: '/settings' },
 ];
@@ -50,6 +56,10 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const navigate = useNavigate();
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Get navigation items based on user type
+    const userType = Cookies.get('user_type');
+    const navigationItems = userType === 'company' ? companyNavigationItems : studentNavigationItems;
 
     // Close mobile menu when screen size changes to desktop
     useEffect(() => {

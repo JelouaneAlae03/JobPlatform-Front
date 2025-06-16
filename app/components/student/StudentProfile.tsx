@@ -112,9 +112,10 @@ export default function StudentProfile() {
                 delete submitData.password_confirmation;
             }
 
-            // Convert skills array to string
+            // Convert skills array to string for API submission
             if (submitData.skills) {
-                submitData.skills = submitData.skills.join(',');
+                const skillsString = submitData.skills.join(',');
+                submitData.skills = skillsString as any; // Type assertion needed for API submission
             }
 
             console.log('Sending update request with data:', submitData);

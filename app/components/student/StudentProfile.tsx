@@ -41,6 +41,24 @@ export default function StudentProfile() {
     });
     const [currentSkill, setCurrentSkill] = useState('');
 
+    // Check for authentication cookie
+    useEffect(() => {
+        const token = Cookies.get('access_token');
+        const userType = Cookies.get('user_type');
+
+        if (!token) {
+            toast.error('Please login to access your profile');
+            navigate('/login');
+            return;
+        }
+
+        if (userType !== 'student') {
+            toast.error('Access denied. This page is for students only.');
+            navigate('/dashboard');
+            return;
+        }
+    }, [navigate]);
+
     useEffect(() => {
         const fetchStudentData = async () => {
             try {
@@ -58,14 +76,19 @@ export default function StudentProfile() {
                     ...response.data,
                     skills
                 }));
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error fetching student data:', error);
-                toast.error('Failed to fetch student information');
+                if (error.response?.status === 401) {
+                    toast.error('Your session has expired. Please login again.');
+                    navigate('/login');
+                } else {
+                    toast.error('Failed to fetch student information');
+                }
             }
         };
 
         fetchStudentData();
-    }, []);
+    }, [navigate]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;

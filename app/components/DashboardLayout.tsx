@@ -1,7 +1,7 @@
 import { useAuth } from '~/context/AuthContext';
 import { useNavigate, Link } from 'react-router';
 import { useState, useEffect } from 'react';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 
 // Role-based navigation items
@@ -56,6 +56,24 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const navigate = useNavigate();
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Check for authentication cookie
+    useEffect(() => {
+        const token = Cookies.get('access_token');
+        const userType = Cookies.get('user_type');
+
+        if (!token) {
+            toast.error('Please login to access the dashboard');
+            navigate('/login');
+            return;
+        }
+
+        if (!userType || (userType !== 'student' && userType !== 'company')) {
+            toast.error('Invalid user type. Please login again.');
+            navigate('/login');
+            return;
+        }
+    }, [navigate]);
 
     // Get navigation items based on user type
     const userType = Cookies.get('user_type');

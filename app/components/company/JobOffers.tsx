@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '~/context/AuthContext';
+import LoadingSpinner from '../LoadingSpinner';
+import LoadingButton from '../LoadingButton';
+import { useLoading } from '~/hooks/useLoading';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
@@ -89,6 +92,12 @@ export default function JobOffers() {
         id_JobType: 1,
         id_OffreStatus: 1
     });
+    const [error, setError] = useState('');
+    const [deletingOffers, setDeletingOffers] = useState<Set<number>>(new Set());
+    const [updatingOffers, setUpdatingOffers] = useState<Set<number>>(new Set());
+
+    // Use the new loading hook
+    const { isLoading, withLoading } = useLoading(true);
 
     // Get unique statuses from offers
     const getUniqueStatuses = () => {
@@ -115,33 +124,38 @@ export default function JobOffers() {
 
     // Fetch job offers
     const fetchOffers = async () => {
-        try {
-            const response = await axios.get('http://127.0.0.1:8000/api/offers', {
-                headers: {
-                    Authorization: `Bearer ${Cookies.get('access_token')}`
-                }
-            });
+        await withLoading(async () => {
+            try {
+                const response = await axios.get('http://127.0.0.1:8000/api/offers', {
+                    headers: {
+                        Authorization: `Bearer ${Cookies.get('access_token')}`
+                    }
+                });
 
-            // Check if response has the expected structure
-            if (response.data && response.data.offers && Array.isArray(response.data.offers)) {
-                // Transform the offers to match our interface
-                const transformedOffers = response.data.offers.map((offer: any) => ({
-                    ...offer,
-                    skills: offer.skills ? offer.skills.split(',').map((skill: string) => ({
-                        name: skill.trim()
-                    })) : []
-                }));
-                setOffers(transformedOffers);
-            } else {
-                console.error('Invalid response format:', response.data);
+                // Check if response has the expected structure
+                if (response.data && response.data.offers && Array.isArray(response.data.offers)) {
+                    // Transform the offers to match our interface
+                    const transformedOffers = response.data.offers.map((offer: any) => ({
+                        ...offer,
+                        skills: offer.skills ? offer.skills.split(',').map((skill: string) => ({
+                            name: skill.trim()
+                        })) : []
+                    }));
+                    setOffers(transformedOffers);
+                    setError('');
+                } else {
+                    console.error('Invalid response format:', response.data);
+                    setOffers([]);
+                    setError('Invalid response format from server');
+                    toast.error('Invalid response format from server');
+                }
+            } catch (error) {
+                console.error('Error fetching offers:', error);
                 setOffers([]);
-                toast.error('Invalid response format from server');
+                setError('Failed to fetch job offers');
+                toast.error('Failed to fetch job offers');
             }
-        } catch (error) {
-            console.error('Error fetching offers:', error);
-            setOffers([]);
-            toast.error('Failed to fetch job offers');
-        }
+        });
     };
 
     // Fetch job types
@@ -216,77 +230,74 @@ export default function JobOffers() {
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        try {
-            const offerData = {
-                title: formData.title,
-                Job_Descriptin: formData.Job_Descriptin,
-                skills: formData.skills.map(skill => skill.name).join(', '),
-                expiration_date: formData.expiration_date,
-                max_applications: formData.max_applications,
-                id_JobType: formData.id_JobType,
-                id_OffreStatus: formData.id_OffreStatus
-            };
+        await withLoading(async () => {
+            try {
+                const headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Cookies.get('access_token')}`
+                };
 
-            if (editingOffer) {
-                // Update existing offer
-                await axios.put(`http://127.0.0.1:8000/api/Addoffers/${editingOffer.id}`, offerData, {
-                    headers: {
-                        Authorization: `Bearer ${Cookies.get('access_token')}`,
-                        'Content-Type': 'application/json'
-                    }
+                const submitData = {
+                    ...formData,
+                    skills: formData.skills.map(skill => skill.name).join(',')
+                };
+
+                if (editingOffer) {
+                    await axios.put(`http://127.0.0.1:8000/api/offers/${editingOffer.id}`, submitData, { headers });
+                    toast.success('Offer updated successfully');
+                } else {
+                    await axios.post('http://127.0.0.1:8000/api/offers', submitData, { headers });
+                    toast.success('Offer created successfully');
+                }
+
+                setIsModalOpen(false);
+                setEditingOffer(null);
+                setFormData({
+                    title: '',
+                    Job_Descriptin: '',
+                    expiration_date: '',
+                    max_applications: 20,
+                    id_JobType: 1,
+                    id_OffreStatus: 1,
+                    skills: []
                 });
-                toast.success('Job offer updated successfully');
-            } else {
-                // Create new offer
-                await axios.post('http://127.0.0.1:8000/api/Addoffers', offerData, {
-                    headers: {
-                        Authorization: `Bearer ${Cookies.get('access_token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                toast.success('Job offer created successfully');
-            }
-            setIsModalOpen(false);
-            setEditingOffer(null);
-            setFormData({
-                title: '',
-                Job_Descriptin: '',
-                expiration_date: '',
-                max_applications: 20,
-                id_JobType: 1,
-                id_OffreStatus: 1,
-                skills: []
-            });
-            fetchOffers();
-        } catch (error) {
-            if (axios.isAxiosError(error) && error.response?.data?.errors) {
-                // Display validation errors
-                const errors = error.response.data.errors;
-                Object.values(errors).forEach((errorMessages: any) => {
-                    errorMessages.forEach((message: string) => {
-                        toast.error(message);
+                fetchOffers(); // Refresh the list
+            } catch (error: any) {
+                console.error('Error saving offer:', error);
+                if (error.response?.data?.errors) {
+                    const errors = error.response.data.errors;
+                    Object.values(errors).forEach((errorMessages: any) => {
+                        toast.error(errorMessages[0]);
                     });
-                });
-            } else {
-                toast.error('Failed to save job offer');
+                } else {
+                    toast.error(error.response?.data?.message || 'Failed to save offer');
+                }
             }
-        }
+        });
     };
 
     // Handle offer deletion
     const handleDelete = async (id: number) => {
-        if (window.confirm('Are you sure you want to delete this job offer?')) {
-            try {
-                await axios.delete(`http://127.0.0.1:8000/api/company/job-offers/${id}`, {
-                    headers: {
-                        Authorization: `Bearer ${Cookies.get('access_token')}`
-                    }
-                });
-                toast.success('Job offer deleted successfully');
-                fetchOffers();
-            } catch (error) {
-                toast.error('Failed to delete job offer');
-            }
+        setDeletingOffers(prev => new Set(prev).add(id));
+
+        try {
+            await axios.delete(`http://127.0.0.1:8000/api/offers/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${Cookies.get('access_token')}`
+                }
+            });
+            toast.success('Offer deleted successfully');
+            fetchOffers(); // Refresh the list
+        } catch (error: any) {
+            console.error('Error deleting offer:', error);
+            toast.error(error.response?.data?.message || 'Failed to delete offer');
+        } finally {
+            setDeletingOffers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(id);
+                return newSet;
+            });
         }
     };
 
@@ -313,30 +324,22 @@ export default function JobOffers() {
     const handleDeleteConfirm = async () => {
         if (!offerToDelete) return;
 
-        try {
-            const response = await axios.delete(
-                `http://127.0.0.1:8000/api/deleteoffer/${offerToDelete.id}`,
-                {
+        await withLoading(async () => {
+            try {
+                await axios.delete(`http://127.0.0.1:8000/api/offers/${offerToDelete.id}`, {
                     headers: {
-                        'Accept': 'application/json',
-                        'Authorization': `Bearer ${Cookies.get('access_token')}`
+                        Authorization: `Bearer ${Cookies.get('access_token')}`
                     }
-                }
-            );
-
-            if (response.data) {
+                });
                 toast.success('Offer deleted successfully');
-                // Remove the deleted offer from the state
-                setOffers(offers.filter(offer => offer.id !== offerToDelete.id));
-                setFilteredOffers(filteredOffers.filter(offer => offer.id !== offerToDelete.id));
+                setIsDeleteModalOpen(false);
+                setOfferToDelete(null);
+                fetchOffers(); // Refresh the list
+            } catch (error: any) {
+                console.error('Error deleting offer:', error);
+                toast.error(error.response?.data?.message || 'Failed to delete offer');
             }
-        } catch (error) {
-            console.error('Error deleting offer:', error);
-            toast.error('Failed to delete offer. Please try again.');
-        } finally {
-            setIsDeleteModalOpen(false);
-            setOfferToDelete(null);
-        }
+        });
     };
 
     const handleEditClick = (offer: JobOffer) => {
@@ -368,42 +371,41 @@ export default function JobOffers() {
     const handleEditConfirm = async () => {
         if (!offerToEdit) return;
 
-        try {
-            const response = await axios.put(
-                `http://127.0.0.1:8000/api/EditOffer/${offerToEdit.id}`,
-                {
-                    ...editFormData,
-                    skills: editFormData.skills.map(skill => skill.name).join(', ')
-                },
-                {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${Cookies.get('access_token')}`
-                    }
-                }
-            );
+        setUpdatingOffers(prev => new Set(prev).add(offerToEdit.id));
 
-            if (response.data) {
-                toast.success('Offer updated successfully');
-                // Update the offer in the state
-                setOffers(offers.map(offer =>
-                    offer.id === offerToEdit.id
-                        ? { ...offer, ...editFormData }
-                        : offer
-                ));
-                setFilteredOffers(filteredOffers.map(offer =>
-                    offer.id === offerToEdit.id
-                        ? { ...offer, ...editFormData }
-                        : offer
-                ));
-            }
-        } catch (error) {
-            console.error('Error updating offer:', error);
-            toast.error('Failed to update offer. Please try again.');
-        } finally {
+        try {
+            const headers = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Cookies.get('access_token')}`
+            };
+
+            const submitData = {
+                ...editFormData,
+                skills: editFormData.skills.map(skill => skill.name).join(',')
+            };
+
+            await axios.put(`http://127.0.0.1:8000/api/offers/${offerToEdit.id}`, submitData, { headers });
+            toast.success('Offer updated successfully');
             setIsEditModalOpen(false);
             setOfferToEdit(null);
+            fetchOffers(); // Refresh the list
+        } catch (error: any) {
+            console.error('Error updating offer:', error);
+            if (error.response?.data?.errors) {
+                const errors = error.response.data.errors;
+                Object.values(errors).forEach((errorMessages: any) => {
+                    toast.error(errorMessages[0]);
+                });
+            } else {
+                toast.error(error.response?.data?.message || 'Failed to update offer');
+            }
+        } finally {
+            setUpdatingOffers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(offerToEdit.id);
+                return newSet;
+            });
         }
     };
 
@@ -415,8 +417,24 @@ export default function JobOffers() {
         }));
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-[400px]">
+                <LoadingSpinner size="lg" text="Loading job offers..." />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-red-50 p-4 rounded-md">
+                <p className="text-red-700">{error}</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <Toaster />
             {/* Offer Manager Navbar */}
             <div className="bg-white shadow-md rounded-lg mb-8">
@@ -449,7 +467,7 @@ export default function JobOffers() {
                                 ))}
                             </nav>
                         </div>
-                        <button
+                        <LoadingButton
                             onClick={() => {
                                 setEditingOffer(null);
                                 setFormData({
@@ -463,10 +481,11 @@ export default function JobOffers() {
                                 });
                                 setIsModalOpen(true);
                             }}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            variant="primary"
+                            size="md"
                         >
                             Create New Offer
-                        </button>
+                        </LoadingButton>
                     </div>
                 </div>
             </div>
@@ -510,18 +529,26 @@ export default function JobOffers() {
                             )}
                         </div>
                         <div className="flex justify-end space-x-2">
-                            <button
+                            <LoadingButton
                                 onClick={() => handleEditClick(offer)}
-                                className="text-blue-600 hover:text-blue-800 focus:outline-none"
+                                variant="secondary"
+                                size="sm"
+                                loading={updatingOffers.has(offer.id)}
+                                loadingText="Updating..."
+                                disabled={deletingOffers.has(offer.id)}
                             >
                                 Edit
-                            </button>
-                            <button
+                            </LoadingButton>
+                            <LoadingButton
                                 onClick={() => handleDeleteClick(offer)}
-                                className="text-red-600 hover:text-red-800 focus:outline-none"
+                                variant="danger"
+                                size="sm"
+                                loading={deletingOffers.has(offer.id)}
+                                loadingText="Deleting..."
+                                disabled={updatingOffers.has(offer.id)}
                             >
                                 Delete
-                            </button>
+                            </LoadingButton>
                         </div>
                     </div>
                 ))}
@@ -660,20 +687,23 @@ export default function JobOffers() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex justify-end space-x-3 mt-6">
+                            <div className="flex justify-end space-x-4 mt-6">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
                                 >
                                     Cancel
                                 </button>
-                                <button
+                                <LoadingButton
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    loading={isLoading}
+                                    loadingText={editingOffer ? 'Updating...' : 'Creating...'}
+                                    variant="primary"
+                                    size="md"
                                 >
                                     {editingOffer ? 'Update' : 'Create'}
-                                </button>
+                                </LoadingButton>
                             </div>
                         </form>
                     </div>
@@ -822,12 +852,15 @@ export default function JobOffers() {
                                 >
                                     Cancel
                                 </button>
-                                <button
+                                <LoadingButton
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                    loading={updatingOffers.has(offerToEdit.id)}
+                                    loadingText="Updating..."
+                                    variant="primary"
+                                    size="md"
                                 >
                                     Update Offer
-                                </button>
+                                </LoadingButton>
                             </div>
                         </form>
                     </div>
@@ -852,12 +885,15 @@ export default function JobOffers() {
                             >
                                 Cancel
                             </button>
-                            <button
+                            <LoadingButton
                                 onClick={handleDeleteConfirm}
-                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                loading={isLoading}
+                                loadingText="Deleting..."
+                                variant="danger"
+                                size="md"
                             >
                                 Delete
-                            </button>
+                            </LoadingButton>
                         </div>
                     </div>
                 </div>

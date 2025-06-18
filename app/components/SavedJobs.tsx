@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import Pagination from './Pagination';
+import LoadingSpinner from './LoadingSpinner';
+import { useLoading } from '~/hooks/useLoading';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'react-hot-toast';
@@ -22,7 +24,6 @@ export default function SavedJobs() {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [searchQuery, setSearchQuery] = useState('');
     const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [pagination, setPagination] = useState({
         total: 0,
@@ -31,87 +32,91 @@ export default function SavedJobs() {
         last_page: 1
     });
 
+    // Use the new loading hook
+    const { isLoading, withLoading } = useLoading(true);
+
     useEffect(() => {
         fetchSavedJobs();
     }, [currentPage, itemsPerPage, searchQuery]);
 
     const fetchSavedJobs = async () => {
-        try {
-            setIsLoading(true);
-            const token = Cookies.get('access_token');
-            if (!token) {
-                window.location.href = '/login';
-                return;
-            }
-
-            const response = await axios.get('http://127.0.0.1:8000/api/saved-offers', {
-                params: {
-                    page: currentPage,
-                    per_page: itemsPerPage,
-                    search: searchQuery
-                },
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+        await withLoading(async () => {
+            try {
+                const token = Cookies.get('access_token');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
                 }
-            });
 
-            // Transform the saved offers data to match our interface
-            const transformedJobs = response.data.map((saved: any) => ({
-                id: saved.offer.id,
-                title: saved.offer.title,
-                company: saved.offer.company.name,
-                location: saved.offer.company.ville,
-                type: saved.offer.jobtype?.name || '',
-                salary: '', // Add if available in your data
-                description: saved.offer.Job_Descriptin,
-                requirements: saved.offer.skills ? saved.offer.skills.split(',') : [],
-                company_email: saved.offer.company.email,
-                created_at: saved.created_at
-            }));
+                const response = await axios.get('http://127.0.0.1:8000/api/saved-offers', {
+                    params: {
+                        page: currentPage,
+                        per_page: itemsPerPage,
+                        search: searchQuery
+                    },
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
 
-            setSavedJobs(transformedJobs);
-            setPagination({
-                total: response.data.length,
-                per_page: itemsPerPage,
-                current_page: currentPage,
-                last_page: Math.ceil(response.data.length / itemsPerPage)
-            });
-            setError('');
-        } catch (error: any) {
-            if (error.response?.status === 401) {
-                window.location.href = '/login';
-            } else {
-                setError(error.response?.data?.message || 'Failed to fetch saved jobs');
-                toast.error('Failed to fetch saved jobs');
+                // Transform the saved offers data to match our interface
+                const transformedJobs = response.data.map((saved: any) => ({
+                    id: saved.offer.id,
+                    title: saved.offer.title,
+                    company: saved.offer.company.name,
+                    location: saved.offer.company.ville,
+                    type: saved.offer.jobtype?.name || '',
+                    salary: '', // Add if available in your data
+                    description: saved.offer.Job_Descriptin,
+                    requirements: saved.offer.skills ? saved.offer.skills.split(',') : [],
+                    company_email: saved.offer.company.email,
+                    created_at: saved.created_at
+                }));
+
+                setSavedJobs(transformedJobs);
+                setPagination({
+                    total: response.data.length,
+                    per_page: itemsPerPage,
+                    current_page: currentPage,
+                    last_page: Math.ceil(response.data.length / itemsPerPage)
+                });
+                setError('');
+            } catch (error: any) {
+                if (error.response?.status === 401) {
+                    window.location.href = '/login';
+                } else {
+                    setError(error.response?.data?.message || 'Failed to fetch saved jobs');
+                    toast.error('Failed to fetch saved jobs');
+                }
             }
-        } finally {
-            setIsLoading(false);
-        }
+        });
     };
 
     const handleRemoveJob = async (jobId: number) => {
-        try {
-            const token = Cookies.get('access_token');
-            if (!token) {
-                window.location.href = '/login';
-                return;
-            }
-
-            await axios.delete(`http://127.0.0.1:8000/api/saved-offers/${jobId}`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+        await withLoading(async () => {
+            try {
+                const token = Cookies.get('access_token');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
                 }
-            });
 
-            setSavedJobs(prev => prev.filter(job => job.id !== jobId));
-            toast.success('Job removed from saved jobs');
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to remove job');
-        }
+                await axios.delete(`http://127.0.0.1:8000/api/saved-offers/${jobId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                setSavedJobs(prev => prev.filter(job => job.id !== jobId));
+                toast.success('Job removed from saved jobs');
+            } catch (error: any) {
+                toast.error(error.response?.data?.message || 'Failed to remove job');
+            }
+        });
     };
 
     const handlePageChange = (page: number) => {
@@ -127,7 +132,7 @@ export default function SavedJobs() {
     if (isLoading) {
         return (
             <div className="flex justify-center items-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <LoadingSpinner size="lg" text="Loading saved jobs..." />
             </div>
         );
     }

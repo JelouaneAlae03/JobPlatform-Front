@@ -1,47 +1,123 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import Cookies from 'js-cookie';
 import { useAuth } from '~/context/AuthContext';
-import { Toaster, toast } from 'react-hot-toast';
+import LoadingSpinner from './LoadingSpinner';
+import LoadingButton from './LoadingButton';
+import { useLoading } from '~/hooks/useLoading';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router';
+import Cookies from 'js-cookie';
 
-interface CompanyData {
-    name: string;
-    email: string;
-    domain: string;
-    address: string;
-    country: string;
-    ville: string;
-    rc: string;
-    password: string;
-    password_confirmation: string;
+interface SettingsData {
+    notifications: {
+        email: boolean;
+        push: boolean;
+        sms: boolean;
+    };
+    privacy: {
+        profile_visibility: 'public' | 'private' | 'connections';
+        show_email: boolean;
+        show_phone: boolean;
+    };
+    preferences: {
+        language: string;
+        timezone: string;
+        theme: 'light' | 'dark' | 'auto';
+    };
 }
 
 export default function Settings() {
-    const { user, company } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
-    const [formData, setFormData] = useState<CompanyData>({
-        name: '',
-        email: '',
-        domain: '',
-        address: '',
-        country: '',
-        ville: '',
-        rc: '',
-        password: '',
-        password_confirmation: ''
+    const [settings, setSettings] = useState<SettingsData>({
+        notifications: {
+            email: true,
+            push: true,
+            sms: false
+        },
+        privacy: {
+            profile_visibility: 'public',
+            show_email: true,
+            show_phone: false
+        },
+        preferences: {
+            language: 'en',
+            timezone: 'UTC',
+            theme: 'light'
+        }
     });
-    const [isLoading, setIsLoading] = useState(false);
-    const [isFetching, setIsFetching] = useState(true);
+    const [error, setError] = useState('');
+
+    // Use the new loading hook
+    const { isLoading, withLoading } = useLoading(true);
 
     useEffect(() => {
-        const fetchCompanyData = async () => {
-            // if (!user?.id) {
-            //     toast.error('Please log in to access company settings');
-            //     navigate('/login');
-            //     return;
-            // }
+        const fetchSettings = async () => {
+            await withLoading(async () => {
+                try {
+                    const headers = {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${Cookies.get('access_token')}`
+                    };
 
+                    // Fetch user settings from API
+                    const response = await axios.get('http://127.0.0.1:8000/api/user/settings', { headers });
+                    if (response.data) {
+                        setSettings(prev => ({
+                            ...prev,
+                            ...response.data
+                        }));
+                    }
+                    setError('');
+                } catch (error: any) {
+                    console.error('Error fetching settings:', error);
+                    // If settings endpoint doesn't exist, use default settings
+                    if (error.response?.status === 404) {
+                        console.log('Settings endpoint not found, using default settings');
+                    } else {
+                        setError('Failed to load settings');
+                        toast.error('Failed to load settings');
+                    }
+                }
+            });
+        };
+
+        fetchSettings();
+    }, [withLoading]);
+
+    const handleNotificationChange = (key: keyof SettingsData['notifications']) => {
+        setSettings(prev => ({
+            ...prev,
+            notifications: {
+                ...prev.notifications,
+                [key]: !prev.notifications[key]
+            }
+        }));
+    };
+
+    const handlePrivacyChange = (key: keyof SettingsData['privacy'], value: any) => {
+        setSettings(prev => ({
+            ...prev,
+            privacy: {
+                ...prev.privacy,
+                [key]: value
+            }
+        }));
+    };
+
+    const handlePreferenceChange = (key: keyof SettingsData['preferences'], value: any) => {
+        setSettings(prev => ({
+            ...prev,
+            preferences: {
+                ...prev.preferences,
+                [key]: value
+            }
+        }));
+    };
+
+    const handleSaveSettings = async () => {
+        await withLoading(async () => {
             try {
                 const headers = {
                     'Accept': 'application/json',
@@ -49,115 +125,261 @@ export default function Settings() {
                     'Authorization': `Bearer ${Cookies.get('access_token')}`
                 };
 
-                // First try to get the company profile
-                const response = await axios.get('http://127.0.0.1:8000/api/company/profile', { headers });
-                const companyData = response.data;
-
-                setFormData(prev => ({
-                    ...prev,
-                    name: companyData.name || '',
-                    email: companyData.email || '',
-                    domain: companyData.domain || '',
-                    address: companyData.address || '',
-                    country: companyData.country || '',
-                    ville: companyData.ville || '',
-                    rc: companyData.rc || ''
-                }));
+                // Save settings to API
+                await axios.put('http://127.0.0.1:8000/api/user/settings', settings, { headers });
+                toast.success('Settings saved successfully');
             } catch (error: any) {
-                console.error('Error fetching company data:', error);
-                // if (error.response?.status === 401) {
-                //     toast.error('Please log in to access company settings');
-                //     navigate('/login');
-                // } else {
-                //     toast.error(error.response?.data?.message || 'Failed to fetch company information');
-                // }
-            } finally {
-                setIsFetching(false);
+                console.error('Error saving settings:', error);
+                if (error.response?.status === 404) {
+                    // If settings endpoint doesn't exist, just show success
+                    toast.success('Settings updated locally');
+                } else {
+                    toast.error('Failed to save settings');
+                }
             }
-        };
-
-        fetchCompanyData();
-    }, [user?.id, navigate]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        });
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-
-        try {
-            const headers = {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${Cookies.get('access_token')}`
+    const handleResetSettings = async () => {
+        await withLoading(async () => {
+            const defaultSettings: SettingsData = {
+                notifications: {
+                    email: true,
+                    push: true,
+                    sms: false
+                },
+                privacy: {
+                    profile_visibility: 'public',
+                    show_email: true,
+                    show_phone: false
+                },
+                preferences: {
+                    language: 'en',
+                    timezone: 'UTC',
+                    theme: 'light'
+                }
             };
 
-            // Create a copy of formData without empty password fields
-            const submitData: Partial<CompanyData> = { ...formData };
-            if (!submitData.password) {
-                delete submitData.password;
-                delete submitData.password_confirmation;
-            }
-
-            const response = await axios.put('http://127.0.0.1:8000/api/company/profile', submitData, { headers });
-
-            toast.success('Company information updated successfully');
-
-            // Clear password fields after successful update
-            setFormData(prev => ({
-                ...prev,
-                password: '',
-                password_confirmation: ''
-            }));
-
-        } catch (error: any) {
-            console.error('Error updating company information:', error);
-            if (error.response?.status === 401) {
-                toast.error('Please log in to update company settings');
-                navigate('/login');
-            } else if (error.response?.data?.errors) {
-                const errors = error.response.data.errors;
-                Object.values(errors).forEach((errorMessages: any) => {
-                    toast.error(errorMessages[0]);
-                });
-            } else {
-                toast.error(error.response?.data?.message || 'Failed to update company information');
-            }
-        } finally {
-            setIsLoading(false);
-        }
+            setSettings(defaultSettings);
+            toast.success('Settings reset to default');
+        });
     };
 
-    if (isFetching) {
+    if (isLoading) {
         return (
-            <div className="max-w-4xl mx-auto">
-                <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
-                    <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <span className="ml-3 text-blue-600">Loading company information...</span>
-                    </div>
-                </div>
+            <div className="flex justify-center items-center min-h-[400px]">
+                <LoadingSpinner size="lg" text="Loading settings..." />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-red-50 p-4 rounded-md">
+                <p className="text-red-700">{error}</p>
             </div>
         );
     }
 
     return (
-        <div className="max-w-4xl mx-auto">
-            <Toaster position="top-right" />
-
+        <div className="max-w-4xl mx-auto space-y-6">
             {/* Header Section */}
-            <div className="bg-white p-4 rounded-lg shadow-md mb-6 border border-blue-100">
-                <h2 className="text-xl font-semibold text-blue-900">Settings</h2>
-                <p className="text-blue-600 mt-1">Update your app Settings</p>
+            <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
+                <h2 className="text-2xl font-semibold text-blue-900">Settings</h2>
+                <p className="text-blue-600 mt-1">Manage your account preferences and privacy settings</p>
             </div>
 
+            {/* Notifications Section */}
+            <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
+                <h3 className="text-lg font-semibold text-blue-900 mb-4">Notifications</h3>
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="font-medium text-gray-900">Email Notifications</h4>
+                            <p className="text-sm text-gray-600">Receive notifications via email</p>
+                        </div>
+                        <button
+                            onClick={() => handleNotificationChange('email')}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.notifications.email ? 'bg-blue-600' : 'bg-gray-200'
+                                }`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.notifications.email ? 'translate-x-6' : 'translate-x-1'
+                                    }`}
+                            />
+                        </button>
+                    </div>
 
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="font-medium text-gray-900">Push Notifications</h4>
+                            <p className="text-sm text-gray-600">Receive push notifications in browser</p>
+                        </div>
+                        <button
+                            onClick={() => handleNotificationChange('push')}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.notifications.push ? 'bg-blue-600' : 'bg-gray-200'
+                                }`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.notifications.push ? 'translate-x-6' : 'translate-x-1'
+                                    }`}
+                            />
+                        </button>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="font-medium text-gray-900">SMS Notifications</h4>
+                            <p className="text-sm text-gray-600">Receive notifications via SMS</p>
+                        </div>
+                        <button
+                            onClick={() => handleNotificationChange('sms')}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.notifications.sms ? 'bg-blue-600' : 'bg-gray-200'
+                                }`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.notifications.sms ? 'translate-x-6' : 'translate-x-1'
+                                    }`}
+                            />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Privacy Section */}
+            <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
+                <h3 className="text-lg font-semibold text-blue-900 mb-4">Privacy</h3>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
+                            Profile Visibility
+                        </label>
+                        <select
+                            value={settings.privacy.profile_visibility}
+                            onChange={(e) => handlePrivacyChange('profile_visibility', e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="public">Public - Anyone can view</option>
+                            <option value="connections">Connections only</option>
+                            <option value="private">Private - Only you</option>
+                        </select>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="font-medium text-gray-900">Show Email Address</h4>
+                            <p className="text-sm text-gray-600">Display your email on your profile</p>
+                        </div>
+                        <button
+                            onClick={() => handlePrivacyChange('show_email', !settings.privacy.show_email)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.privacy.show_email ? 'bg-blue-600' : 'bg-gray-200'
+                                }`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.privacy.show_email ? 'translate-x-6' : 'translate-x-1'
+                                    }`}
+                            />
+                        </button>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="font-medium text-gray-900">Show Phone Number</h4>
+                            <p className="text-sm text-gray-600">Display your phone on your profile</p>
+                        </div>
+                        <button
+                            onClick={() => handlePrivacyChange('show_phone', !settings.privacy.show_phone)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.privacy.show_phone ? 'bg-blue-600' : 'bg-gray-200'
+                                }`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.privacy.show_phone ? 'translate-x-6' : 'translate-x-1'
+                                    }`}
+                            />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Preferences Section */}
+            <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
+                <h3 className="text-lg font-semibold text-blue-900 mb-4">Preferences</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
+                            Language
+                        </label>
+                        <select
+                            value={settings.preferences.language}
+                            onChange={(e) => handlePreferenceChange('language', e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="en">English</option>
+                            <option value="fr">Français</option>
+                            <option value="es">Español</option>
+                            <option value="de">Deutsch</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
+                            Timezone
+                        </label>
+                        <select
+                            value={settings.preferences.timezone}
+                            onChange={(e) => handlePreferenceChange('timezone', e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="UTC">UTC</option>
+                            <option value="America/New_York">Eastern Time</option>
+                            <option value="America/Chicago">Central Time</option>
+                            <option value="America/Denver">Mountain Time</option>
+                            <option value="America/Los_Angeles">Pacific Time</option>
+                            <option value="Europe/London">London</option>
+                            <option value="Europe/Paris">Paris</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
+                            Theme
+                        </label>
+                        <select
+                            value={settings.preferences.theme}
+                            onChange={(e) => handlePreferenceChange('theme', e.target.value)}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                            <option value="auto">Auto (System)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
+                <div className="flex flex-col sm:flex-row gap-4 justify-end">
+                    <LoadingButton
+                        onClick={handleResetSettings}
+                        variant="secondary"
+                        size="md"
+                        loading={isLoading}
+                        loadingText="Resetting..."
+                    >
+                        Reset to Default
+                    </LoadingButton>
+                    <LoadingButton
+                        onClick={handleSaveSettings}
+                        variant="primary"
+                        size="md"
+                        loading={isLoading}
+                        loadingText="Saving..."
+                    >
+                        Save Settings
+                    </LoadingButton>
+                </div>
+            </div>
         </div>
     );
 } 

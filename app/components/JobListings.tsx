@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import Pagination from './Pagination';
+import LoadingSpinner from './LoadingSpinner';
+import LoadingButton from './LoadingButton';
+import { useLoading } from '~/hooks/useLoading';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'react-hot-toast';
@@ -37,8 +40,11 @@ export default function JobListings() {
         current_page: 1,
         last_page: 1
     });
-    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [savingJobs, setSavingJobs] = useState<Set<number>>(new Set());
+
+    // Use the new loading hook
+    const { isLoading, withLoading } = useLoading(true);
 
     useEffect(() => {
         setSearchInput(searchQuery);
@@ -73,30 +79,29 @@ export default function JobListings() {
     }, []);
 
     const fetchJobs = async () => {
-        try {
-            setIsLoading(true);
-            const response = await axios.get('http://127.0.0.1:8000/api/job-listings', {
-                params: {
-                    page: currentPage,
-                    per_page: itemsPerPage,
-                    search: searchQuery
-                },
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${Cookies.get('access_token')}`
-                }
-            });
+        await withLoading(async () => {
+            try {
+                const response = await axios.get('http://127.0.0.1:8000/api/job-listings', {
+                    params: {
+                        page: currentPage,
+                        per_page: itemsPerPage,
+                        search: searchQuery
+                    },
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${Cookies.get('access_token')}`
+                    }
+                });
 
-            setJobs(response.data.jobs);
-            setPagination(response.data.pagination);
-            setError('');
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch lis of jobs');
-            console.error('Error fetching jobs:', err);
-        } finally {
-            setIsLoading(false);
-        }
+                setJobs(response.data.jobs);
+                setPagination(response.data.pagination);
+                setError('');
+            } catch (err: any) {
+                setError(err.response?.data?.message || 'Failed to fetch list of jobs');
+                console.error('Error fetching jobs:', err);
+            }
+        });
     };
 
     const handlePageChange = (page: number) => {
@@ -117,6 +122,9 @@ export default function JobListings() {
             window.location.href = '/login';
             return;
         }
+
+        // Add job to saving set
+        setSavingJobs(prev => new Set(prev).add(offerId));
 
         try {
             if (savedOffers.includes(offerId)) {
@@ -162,13 +170,20 @@ export default function JobListings() {
             } else {
                 toast.error(error.response?.data?.message || 'Failed to save/unsave offer');
             }
+        } finally {
+            // Remove job from saving set
+            setSavingJobs(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(offerId);
+                return newSet;
+            });
         }
     };
 
     if (isLoading) {
         return (
             <div className="flex justify-center items-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <LoadingSpinner size="lg" text="Loading jobs..." />
             </div>
         );
     }
@@ -264,15 +279,19 @@ export default function JobListings() {
                                 >
                                     Apply Now
                                 </button>
-                                <button
-                                    className={`px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer ${savedOffers.includes(job.id)
-                                        ? 'border-green-600 text-green-600 hover:bg-green-50 focus:ring-green-500'
-                                        : 'border-blue-600 text-blue-600 hover:bg-blue-50 focus:ring-blue-500'
-                                        }`}
+                                <LoadingButton
+                                    loading={savingJobs.has(job.id)}
                                     onClick={() => handleSaveOffer(job.id)}
+                                    variant={savedOffers.includes(job.id) ? 'success' : 'primary'}
+                                    size="md"
+                                    className={`border ${savedOffers.includes(job.id)
+                                        ? 'border-green-600 text-green-600 hover:bg-green-50'
+                                        : 'border-blue-600 text-blue-600 hover:bg-blue-50'
+                                        }`}
+                                    loadingText={savedOffers.includes(job.id) ? 'Unsaving...' : 'Saving...'}
                                 >
                                     {savedOffers.includes(job.id) ? 'Saved' : 'Save'}
-                                </button>
+                                </LoadingButton>
                             </div>
                         </div>
                     </div>

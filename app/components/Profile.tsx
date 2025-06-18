@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '~/context/AuthContext';
+import LoadingSpinner from './LoadingSpinner';
+import LoadingButton from './LoadingButton';
+import { useLoading } from '~/hooks/useLoading';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router';
@@ -39,34 +42,42 @@ export default function Profile() {
         password: '',
         password_confirmation: ''
     });
+    const [error, setError] = useState('');
+
+    // Use the new loading hook
+    const { isLoading, withLoading } = useLoading(true);
 
     useEffect(() => {
         const fetchCompanyData = async () => {
-            try {
-                const headers = {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${Cookies.get('access_token')}`
-                };
+            await withLoading(async () => {
+                try {
+                    const headers = {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${Cookies.get('access_token')}`
+                    };
 
-                const response = await axios.get('http://127.0.0.1:8000/api/company/profile', { headers });
-                // Format the date to YYYY-MM-DD for the input field
-                const formattedData = {
-                    ...response.data,
-                    date: response.data.date ? new Date(response.data.date).toISOString().split('T')[0] : ''
-                };
-                setFormData(prevData => ({
-                    ...prevData,
-                    ...formattedData
-                }));
-            } catch (error) {
-                console.error('Error fetching company data:', error);
-                toast.error('Failed to fetch company information');
-            }
+                    const response = await axios.get('http://127.0.0.1:8000/api/company/profile', { headers });
+                    // Format the date to YYYY-MM-DD for the input field
+                    const formattedData = {
+                        ...response.data,
+                        date: response.data.date ? new Date(response.data.date).toISOString().split('T')[0] : ''
+                    };
+                    setFormData(prevData => ({
+                        ...prevData,
+                        ...formattedData
+                    }));
+                    setError('');
+                } catch (error) {
+                    console.error('Error fetching company data:', error);
+                    setError('Failed to fetch company information');
+                    toast.error('Failed to fetch company information');
+                }
+            });
         };
 
         fetchCompanyData();
-    }, []);
+    }, [withLoading]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -78,60 +89,78 @@ export default function Profile() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        try {
-            const headers = {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${Cookies.get('access_token')}`
-            };
+        await withLoading(async () => {
+            try {
+                const headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Cookies.get('access_token')}`
+                };
 
-            // Create a copy of formData without empty password fields
-            const submitData: Partial<CompanyFormData> = { ...formData };
-            if (!submitData.password) {
-                delete submitData.password;
-                delete submitData.password_confirmation;
-            }
+                // Create a copy of formData without empty password fields
+                const submitData: Partial<CompanyFormData> = { ...formData };
+                if (!submitData.password) {
+                    delete submitData.password;
+                    delete submitData.password_confirmation;
+                }
 
-            // Format the date to YYYY-MM-DD
-            if (submitData.date) {
-                const date = new Date(submitData.date);
-                submitData.date = date.toISOString().split('T')[0];
-            }
+                // Format the date to YYYY-MM-DD
+                if (submitData.date) {
+                    const date = new Date(submitData.date);
+                    submitData.date = date.toISOString().split('T')[0];
+                }
 
-            console.log('Sending update request with data:', submitData);
-            const response = await axios.put('http://127.0.0.1:8000/api/company/profile', submitData, { headers });
-            console.log('Update response:', response.data);
+                console.log('Sending update request with data:', submitData);
+                const response = await axios.put('http://127.0.0.1:8000/api/company/profile', submitData, { headers });
+                console.log('Update response:', response.data);
 
-            if (response.data) {
-                toast.success('Company information updated successfully');
-                // Clear password fields after successful update
-                setFormData(prev => ({
-                    ...prev,
-                    password: '',
-                    password_confirmation: ''
-                }));
-            } else {
-                toast.error('No response data received from server');
+                if (response.data) {
+                    toast.success('Company information updated successfully');
+                    // Clear password fields after successful update
+                    setFormData(prev => ({
+                        ...prev,
+                        password: '',
+                        password_confirmation: ''
+                    }));
+                } else {
+                    toast.error('No response data received from server');
+                }
+            } catch (error: any) {
+                console.error('Error updating company info:', error);
+                if (error.response) {
+                    // The request was made and the server responded with a status code
+                    // that falls out of the range of 2xx
+                    console.error('Error response data:', error.response.data);
+                    console.error('Error response status:', error.response.status);
+                    toast.error(error.response.data.message || 'Failed to update company information');
+                } else if (error.request) {
+                    // The request was made but no response was received
+                    console.error('No response received:', error.request);
+                    toast.error('No response received from server');
+                } else {
+                    // Something happened in setting up the request that triggered an Error
+                    console.error('Error message:', error.message);
+                    toast.error('Error setting up the request');
+                }
             }
-        } catch (error: any) {
-            console.error('Error updating company info:', error);
-            if (error.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
-                console.error('Error response data:', error.response.data);
-                console.error('Error response status:', error.response.status);
-                toast.error(error.response.data.message || 'Failed to update company information');
-            } else if (error.request) {
-                // The request was made but no response was received
-                console.error('No response received:', error.request);
-                toast.error('No response received from server');
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                console.error('Error message:', error.message);
-                toast.error('Error setting up the request');
-            }
-        }
+        });
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-[400px]">
+                <LoadingSpinner size="lg" text="Loading company profile..." />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-red-50 p-4 rounded-md">
+                <p className="text-red-700">{error}</p>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -302,12 +331,15 @@ export default function Profile() {
 
                 {/* Submit Button */}
                 <div className="flex justify-end">
-                    <button
+                    <LoadingButton
                         type="submit"
-                        className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                        loading={isLoading}
+                        loadingText="Saving changes..."
+                        variant="primary"
+                        size="md"
                     >
                         Save Changes
-                    </button>
+                    </LoadingButton>
                 </div>
             </form>
         </div>

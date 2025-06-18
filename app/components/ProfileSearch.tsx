@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import LoadingSpinner from './LoadingSpinner';
+import { useLoading } from '~/hooks/useLoading';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -21,24 +23,25 @@ export default function ProfileSearch() {
         location: ''
     });
     const [profiles, setProfiles] = useState<Profile[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+
+    // Use the new loading hook
+    const { isLoading, withLoading } = useLoading(false);
 
     const fetchRandomProfiles = async () => {
-        setIsLoading(true);
-        try {
-            const headers = {
-                'Accept': 'application/json',
-                'Authorization': `Bearer ${Cookies.get('access_token')}`
-            };
+        await withLoading(async () => {
+            try {
+                const headers = {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${Cookies.get('access_token')}`
+                };
 
-            const response = await axios.get('http://127.0.0.1:8000/api/profiles/random', { headers });
-            const profiles = response.data.profiles || [];
-            setProfiles(profiles);
-        } catch (error) {
-            console.error('Error fetching random profiles:', error);
-        } finally {
-            setIsLoading(false);
-        }
+                const response = await axios.get('http://127.0.0.1:8000/api/profiles/random', { headers });
+                const profiles = response.data.profiles || [];
+                setProfiles(profiles);
+            } catch (error) {
+                console.error('Error fetching random profiles:', error);
+            }
+        });
     };
 
     // Fetch random profiles on component mount
@@ -48,45 +51,44 @@ export default function ProfileSearch() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
-        setProfiles([]);
+        await withLoading(async () => {
+            setProfiles([]);
 
-        try {
-            const headers = {
-                'Accept': 'application/json',
-                'Authorization': `Bearer ${Cookies.get('access_token')}`
-            };
+            try {
+                const headers = {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${Cookies.get('access_token')}`
+                };
 
-            // Build query parameters
-            const params = new URLSearchParams();
+                // Build query parameters
+                const params = new URLSearchParams();
 
-            if (searchQuery.trim()) {
-                params.append('name', searchQuery.trim());
+                if (searchQuery.trim()) {
+                    params.append('name', searchQuery.trim());
+                }
+
+                if (filters.skills.trim()) {
+                    // Split skills by comma and add each as a separate parameter
+                    const skillsArray = filters.skills.split(',').map(skill => skill.trim()).filter(skill => skill);
+                    skillsArray.forEach(skill => {
+                        params.append('skills[]', skill);
+                    });
+                }
+
+                let response;
+                // If no search parameters are provided, fetch random profiles
+                if (!params.toString()) {
+                    response = await axios.get('http://127.0.0.1:8000/api/profiles/random', { headers });
+                } else {
+                    response = await axios.get(`http://127.0.0.1:8000/api/profiles?${params.toString()}`, { headers });
+                }
+
+                const profiles = response.data.profiles || [];
+                setProfiles(profiles);
+            } catch (error) {
+                console.error('Error searching profiles:', error);
             }
-
-            if (filters.skills.trim()) {
-                // Split skills by comma and add each as a separate parameter
-                const skillsArray = filters.skills.split(',').map(skill => skill.trim()).filter(skill => skill);
-                skillsArray.forEach(skill => {
-                    params.append('skills[]', skill);
-                });
-            }
-
-            let response;
-            // If no search parameters are provided, fetch random profiles
-            if (!params.toString()) {
-                response = await axios.get('http://127.0.0.1:8000/api/profiles/random', { headers });
-            } else {
-                response = await axios.get(`http://127.0.0.1:8000/api/profiles?${params.toString()}`, { headers });
-            }
-
-            const profiles = response.data.profiles || [];
-            setProfiles(profiles);
-        } catch (error) {
-            console.error('Error searching profiles:', error);
-        } finally {
-            setIsLoading(false);
-        }
+        });
     };
 
     const handleContact = (email: string) => {
@@ -131,7 +133,9 @@ export default function ProfileSearch() {
                 <h2 className="text-xl font-semibold text-blue-900 mb-4">Résultats de la recherche</h2>
                 <div className="space-y-4">
                     {isLoading ? (
-                        <p className="text-gray-600">Recherche en cours...</p>
+                        <div className="flex justify-center items-center py-8">
+                            <LoadingSpinner size="md" text="Recherche en cours..." />
+                        </div>
                     ) : profiles.length > 0 ? (
                         <div className="grid gap-4">
                             {profiles.map((profile) => (
@@ -200,7 +204,7 @@ export default function ProfileSearch() {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-gray-600">Recherchez des profils pour voir les résultats ici.</p>
+                        <p className="text-gray-600 text-center py-8">Aucun profil trouvé</p>
                     )}
                 </div>
             </div>

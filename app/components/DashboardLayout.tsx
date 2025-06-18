@@ -6,7 +6,7 @@ import Cookies from 'js-cookie';
 
 // Role-based navigation items
 const studentNavigationItems = [
-    { name: 'Dashboard', icon: '📊', path: '/' },
+    { name: 'Job List', icon: '📊', path: '/' },
     // { name: 'My Applications', icon: '📝', path: '/applications' },
     { name: 'Saved Jobs', icon: '🔖', path: '/saved' },
     { name: 'Profile', icon: '👨‍🎓', path: '/student-profile' },
@@ -16,35 +16,11 @@ const studentNavigationItems = [
 const companyNavigationItems = [
     // { name: 'Dashboard', icon: '📊', path: '/' },
     { name: 'Offer Manager', icon: '💼', path: '/offer-manager' },
-    { name: 'Company Info', icon: '👤', path: '/company-profile' },
     { name: 'Profile Search', icon: '🔍', path: '/profile-search' },
+    { name: 'Company Info', icon: '👤', path: '/company-profile' },
     { name: 'Settings', icon: '⚙️', path: '/settings' },
 ];
 
-// Mock notifications data
-const mockNotifications = [
-    {
-        id: 1,
-        title: "New Job Match",
-        message: "Senior Frontend Developer at Tech Corp matches your profile",
-        time: "5 minutes ago",
-        read: false
-    },
-    {
-        id: 2,
-        title: "Application Update",
-        message: "Your application for Software Engineer has been viewed",
-        time: "1 hour ago",
-        read: false
-    },
-    {
-        id: 3,
-        title: "Profile View",
-        message: "Your profile was viewed by 3 recruiters",
-        time: "2 hours ago",
-        read: false
-    }
-];
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -78,12 +54,19 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     // Get navigation items based on user type
     const userType = Cookies.get('user_type');
     const navigationItems = userType === 'company' ? companyNavigationItems : studentNavigationItems;
+    console.log(Cookies.get('user_type'));
+    console.log(Cookies.get('user'));
+    console.log(Cookies.get('access_token'));
+
 
     // Close mobile menu when screen size changes to desktop
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth >= 1024) {
                 setIsMobileMenuOpen(false);
+            }
+            if (userType === 'company') {
+                navigate('/offer-manager');
             }
         };
 
@@ -93,6 +76,10 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
     const handleLogout = () => {
         logout();
+        Cookies.remove('user');
+        Cookies.remove('user_type');
+        Cookies.remove('access_token');
+        toast.success('Logged out successfully');
         navigate('/login');
     };
 

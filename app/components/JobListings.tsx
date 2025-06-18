@@ -92,7 +92,7 @@ export default function JobListings() {
             setPagination(response.data.pagination);
             setError('');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Failed to fetch job listings');
+            setError(err.response?.data?.message || 'Failed to fetch lis of jobs');
             console.error('Error fetching jobs:', err);
         } finally {
             setIsLoading(false);

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router';
 import { useAuth } from '~/context/AuthContext';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
+import { useEffect } from 'react';
 
 export default function Login() {
     const [isCompany, setIsCompany] = useState(false);
@@ -61,10 +62,16 @@ export default function Login() {
                         }
                     );
 
-                    // Wait for 2 seconds before redirecting
-                    setTimeout(() => {
-                        navigate(from, { replace: true });
-                    }, 2000);
+
+                    if (response.data.user_type === 'company') {
+                        setTimeout(() => {
+                            navigate('/offer-manager');
+                        }, 2000);
+                    } else {
+                        setTimeout(() => {
+                            navigate('/');
+                        }, 2000);
+                    }
                 }
             } else {
                 // Handle student login
@@ -150,6 +157,15 @@ export default function Login() {
         }
     };
 
+
+    useEffect(() => {
+        const token = Cookies.get('access_token');
+        const userType = Cookies.get('user_type');
+
+        if (token && userType) {
+            navigate('/');
+        }
+    }, [navigate]);
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <Toaster />

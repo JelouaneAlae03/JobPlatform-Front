@@ -5,6 +5,7 @@ import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import { useEffect } from 'react';
+import Index from '~/routes/index';
 
 export default function Login() {
     const [isCompany, setIsCompany] = useState(false);
@@ -12,12 +13,12 @@ export default function Login() {
     const [password, setPassword] = useState('');
     const [rc, setRc] = useState('');
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const { login, setIsAuthenticated } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
     // Get the redirect path from location state or default to home
-    const from = location.state?.from || '/';
+    // const from = location.state?.from || '/';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,7 +37,7 @@ export default function Login() {
                     Cookies.set('access_token', response.data.access_token, { expires: 1 });
                     Cookies.set('user', JSON.stringify(response.data.user), { expires: 1 });
                     Cookies.set('user_type', response.data.user_type, { expires: 1 });
-
+                    setIsAuthenticated(true);
                     // Show success toast with login approved message
                     toast.success(
                         <div>
@@ -63,15 +64,7 @@ export default function Login() {
                     );
 
 
-                    if (response.data.user_type === 'company') {
-                        setTimeout(() => {
-                            navigate('/offer-manager');
-                        }, 2000);
-                    } else {
-                        setTimeout(() => {
-                            navigate('/');
-                        }, 2000);
-                    }
+                    navigate("/")
                 }
             } else {
                 // Handle student login
@@ -86,6 +79,7 @@ export default function Login() {
                     Cookies.set('access_token', response.data.access_token, { expires: 1 });
                     Cookies.set('user', JSON.stringify(response.data.user), { expires: 1 });
                     Cookies.set('user_type', response.data.user_type, { expires: 1 });
+                    setIsAuthenticated(true);
 
                     // Show success toast with login approved message
                     toast.success(
@@ -112,10 +106,7 @@ export default function Login() {
                         }
                     );
 
-                    // Wait for 2 seconds before redirecting
-                    setTimeout(() => {
-                        navigate(from, { replace: true });
-                    }, 2000);
+                    navigate("/")
                 }
             }
         } catch (err: any) {

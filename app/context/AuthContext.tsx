@@ -41,6 +41,7 @@ interface AuthContextType {
     login: (email: string, password: string, isCompany: boolean) => Promise<void>;
     register: (data: any) => Promise<{ message: string; company?: any; user?: any }>;
     logout: () => void;
+    setIsAuthenticated: (val: boolean) => void;
     isAuthenticated: boolean;
 }
 
@@ -183,6 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 login,
                 register,
                 logout,
+                setIsAuthenticated,
                 isAuthenticated,
             }}
         >

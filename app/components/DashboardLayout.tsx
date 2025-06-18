@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 
+import { useLocation } from 'react-router';
+
 // Role-based navigation items
 const studentNavigationItems = [
     { name: 'Job List', icon: '📊', path: '/' },
@@ -32,6 +34,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     const navigate = useNavigate();
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const Location = useLocation();
 
     // Check for authentication cookie
     useEffect(() => {
@@ -49,6 +52,13 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
             navigate('/login');
             return;
         }
+
+        // alert("i am " + userType + " to " + Location.pathname)
+
+        // if (userType === "company" && Location.pathname === "/") {
+        //     navigate('/offer-manager');
+        //     // alert("ana kknat7awa");
+        // }
     }, [navigate]);
 
     // Get navigation items based on user type
@@ -79,7 +89,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
         Cookies.remove('user');
         Cookies.remove('user_type');
         Cookies.remove('access_token');
-        toast.success('Logged out successfully');
+        // toast.success('Logged out successfully');
         navigate('/login');
     };
 

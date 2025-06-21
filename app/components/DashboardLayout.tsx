@@ -3,23 +3,33 @@ import { useNavigate, Link } from 'react-router';
 import { useState, useEffect } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
+import HomeIcon from '@mui/icons-material/Home';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
+import PersonIcon from '@mui/icons-material/Person';
+import SettingsIcon from '@mui/icons-material/Settings';
+import WorkIcon from '@mui/icons-material/Work';
+import SearchIcon from '@mui/icons-material/Search';
+import BusinessIcon from '@mui/icons-material/Business';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 import { useLocation } from 'react-router';
 
 // Role-based navigation items
 const studentNavigationItems = [
-    { name: 'Job List', icon: '📊', path: '/' },
-    { name: 'Saved Jobs', icon: '🔖', path: '/saved' },
-    { name: 'Profile', icon: '👨‍🎓', path: '/student-profile' },
-    { name: 'Settings', icon: '⚙️', path: '/settings' },
+    { name: 'Job List', icon: <HomeIcon />, path: '/' },
+    { name: 'Saved Jobs', icon: <BookmarkIcon />, path: '/saved' },
+    { name: 'Profile', icon: <PersonIcon />, path: '/student-profile' },
+    { name: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ];
 
 const companyNavigationItems = [
     // { name: 'Dashboard', icon: '📊', path: '/' },
-    { name: 'Offer Manager', icon: '💼', path: '/offer-manager' },
-    { name: 'Profile Search', icon: '🔍', path: '/profile-search' },
-    { name: 'Company Info', icon: '👤', path: '/company-profile' },
-    { name: 'Settings', icon: '⚙️', path: '/settings' },
+    { name: 'Offer Manager', icon: <WorkIcon />, path: '/offer-manager' },
+    { name: 'Profile Search', icon: <SearchIcon />, path: '/profile-search' },
+    { name: 'Company Info', icon: <BusinessIcon />, path: '/company-profile' },
+    { name: 'Settings', icon: <SettingsIcon />, path: '/settings' },
 ];
 
 
@@ -123,7 +133,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                             onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
                             className="hidden lg:block p-2 rounded-md hover:bg-blue-800 text-white cursor-pointer"
                         >
-                            {isSidebarExpanded ? '◀' : '▶'}
+                            {isSidebarExpanded ? <ChevronLeftIcon /> : <ChevronRightIcon />}
                         </button>
                     </div>
 
@@ -173,7 +183,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                             <div className="flex items-center space-x-4">
                                 {/* Notification Icon */}
                                 <button className="relative p-2 text-gray-600 hover:text-blue-600 focus:outline-none cursor-pointer">
-                                    <span className="text-xl">🔔</span>
+                                    <span className="text-xl"><NotificationsIcon /></span>
                                     <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
                                         3
                                     </span>

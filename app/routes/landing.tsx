@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router';
 import { useState } from 'react';
-
+import image from '../../src/img.avif'
 const websiteFeatures = [
     {
         icon: (
@@ -125,13 +125,6 @@ export default function LandingPage() {
                 <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-8">
                     {/* Left: Text Content */}
                     <div className="flex-1 text-center md:text-left relative">
-                        {/* Job image background */}
-                        <img
-                            src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80"
-                            alt="Job search illustration"
-                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg opacity-20 pointer-events-none select-none -z-10 md:left-0 md:translate-x-0 md:top-1/2 md:-translate-y-1/2"
-                            style={{ filter: 'blur(1px)' }}
-                        />
                         <span className="inline-block bg-blue-100 text-blue-700 font-semibold px-4 py-1 rounded-full mb-4 text-sm shadow">#1 Job Platform for Students & Companies</span>
                         <h1 className="text-5xl md:text-6xl font-extrabold text-blue-900 mb-6 leading-tight drop-shadow-sm relative z-10">
                             Find Your <span className="text-blue-600">Dream</span> Job Today
@@ -146,16 +139,14 @@ export default function LandingPage() {
                             Get Started
                         </button>
                     </div>
-                    {/* Right: Illustration */}
+                    {/* Right: Job Image */}
                     <div className="flex-1 flex justify-center items-center mt-10 md:mt-0">
-                        {/* Placeholder SVG illustration, replace with your own if desired */}
-                        <svg className="w-80 h-80" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <ellipse cx="200" cy="200" rx="180" ry="120" fill="#3B82F6" fillOpacity="0.08" />
-                            <rect x="100" y="120" width="200" height="160" rx="32" fill="#2563EB" fillOpacity="0.15" />
-                            <rect x="130" y="150" width="140" height="100" rx="20" fill="#3B82F6" fillOpacity="0.25" />
-                            <rect x="160" y="180" width="80" height="40" rx="10" fill="#2563EB" fillOpacity="0.4" />
-                            <circle cx="200" cy="200" r="24" fill="#2563EB" fillOpacity="0.7" />
-                        </svg>
+                        <img
+                            src="https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?auto=format&fit=crop&w=600&q=80"
+                            alt="Professional vertical job search illustration"
+                            className="w-full max-w-md h-auto rounded-xl shadow-lg object-cover"
+                            style={{ filter: 'blur(0.5px)', opacity: 0.95 }}
+                        />
                     </div>
                 </div>
             </section>

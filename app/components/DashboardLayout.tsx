@@ -127,7 +127,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                         {isSidebarExpanded ? (
                             <h1 className="text-xl font-semibold text-white">JobPlatform</h1>
                         ) : (
-                            <span className="text-2xl">JP</span>
+                            <span className="text-2xl"></span>
                         )}
                         <button
                             onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}

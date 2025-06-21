@@ -139,17 +139,20 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
                     {/* Navigation Items */}
                     <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                        {navigationItems.map((item) => (
-                            <Link
-                                key={item.name}
-                                to={item.path}
-                                className="flex items-center space-x-3 p-3 rounded-md hover:bg-white hover:text-blue-900 text-blue-100 transition-colors cursor-pointer"
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                                <span className="text-xl">{item.icon}</span>
-                                {isSidebarExpanded && <span>{item.name}</span>}
-                            </Link>
-                        ))}
+                        {navigationItems.map((item) => {
+                            const isActive = Location.pathname === item.path;
+                            return (
+                                <Link
+                                    key={item.name}
+                                    to={item.path}
+                                    className={`flex items-center space-x-3 p-3 rounded-md transition-colors cursor-pointer ${isActive ? 'bg-white text-blue-900 font-semibold shadow' : 'hover:bg-white hover:text-blue-900 text-blue-100'}`}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                >
+                                    <span className="text-xl">{item.icon}</span>
+                                    {isSidebarExpanded && <span>{item.name}</span>}
+                                </Link>
+                            );
+                        })}
                     </nav>
 
                     {/* User Section */}
@@ -172,7 +175,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col min-h-screen lg:ml-64">
+            <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarExpanded ? 'lg:ml-64' : 'lg:ml-20'}`}>
                 {/* Top Navigation Bar */}
                 <nav className="bg-white shadow-md">
                     <div className="px-4 sm:px-6 lg:px-8">

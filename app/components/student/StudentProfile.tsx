@@ -20,6 +20,7 @@ interface StudentFormData {
     sex: string;
     skills: string[];
     profile_picture: string;
+    new_profile_pic?: string;
     password?: string;
     password_confirmation?: string;
 }
@@ -130,6 +131,20 @@ export default function StudentProfile() {
         }));
     };
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({
+                    ...prev,
+                    new_profile_pic: reader.result as string,
+                }));
+            };
+            reader.readAsDataURL(file); // base64
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         await withLoading(async () => {
@@ -153,13 +168,17 @@ export default function StudentProfile() {
                     submitData.skills = skillsString as any; // Type assertion needed for API submission
                 }
 
+                // Only send new_profile_pic if present
+                if (!submitData.new_profile_pic) {
+                    delete submitData.new_profile_pic;
+                }
+
                 console.log('Sending update request with data:', submitData);
                 const response = await axios.put('http://127.0.0.1:8000/api/student/profile', submitData, { headers });
                 console.log('Update response:', response.data);
 
                 if (response.data) {
                     toast.success('Student information updated successfully');
-                    // Clear password fields after successful update
                     setFormData(prev => ({
                         ...prev,
                         password: '',
@@ -318,15 +337,22 @@ export default function StudentProfile() {
                             />
                         </div>
                         <div>
-                            <label htmlFor="profile_picture" className="block text-sm font-medium text-blue-900">Profile Picture URL</label>
+                            <label htmlFor="profile_picture" className="block text-sm font-medium text-blue-900">Profile Picture</label>
                             <input
-                                type="url"
-                                id="profile_picture"
-                                name="profile_picture"
-                                value={formData.profile_picture}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                type="file"
+                                accept="image/*"
+                                id="profile_picture_upload"
+                                onChange={handleImageChange}
+                                className="mt-1 block w-full text-blue-900"
                             />
+                            {/* Preview uploaded image */}
+                            {formData.new_profile_pic && (
+                                <img
+                                    src={formData.new_profile_pic}
+                                    alt="Profile Preview"
+                                    className="mt-2 w-32 h-32 object-cover rounded-full border border-blue-200 shadow"
+                                />
+                            )}
                         </div>
                         <div className="md:col-span-2">
                             <label htmlFor="skills" className="block text-sm font-medium text-blue-900">Skills</label>
@@ -371,7 +397,7 @@ export default function StudentProfile() {
                                 type="password"
                                 id="password"
                                 name="password"
-                                value={formData.password}
+                                value="* * * * * *  * * "
                                 onChange={handleInputChange}
                                 className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
@@ -382,7 +408,7 @@ export default function StudentProfile() {
                                 type="password"
                                 id="password_confirmation"
                                 name="password_confirmation"
-                                value={formData.password_confirmation}
+                                value="* * * * * *  * * "
                                 onChange={handleInputChange}
                                 className="mt-1 block w-full px-3 py-2 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />

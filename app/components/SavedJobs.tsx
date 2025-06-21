@@ -67,7 +67,7 @@ export default function SavedJobs() {
                     title: saved.offer.title,
                     company: saved.offer.company.name,
                     location: saved.offer.company.ville,
-                    type: saved.offer.jobtype?.name || '',
+                    type: saved.offer.jobtype.Libelle,
                     salary: '', // Add if available in your data
                     description: saved.offer.Job_Descriptin,
                     requirements: saved.offer.skills ? saved.offer.skills.split(',') : [],

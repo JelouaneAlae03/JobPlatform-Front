@@ -186,7 +186,7 @@ export default function Settings() {
             {/* Header Section */}
             <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
                 <h2 className="text-2xl font-semibold text-blue-900">Settings</h2>
-                <p className="text-blue-600 mt-1">Manage your account preferences and privacy settings</p>
+                <p className="text-blue-600 mt-1">Manage account preferences and privacy settings</p>
             </div>
 
             {/* Notifications Section */}

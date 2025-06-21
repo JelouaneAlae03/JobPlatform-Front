@@ -206,7 +206,7 @@ export default function StudentProfile() {
             {/* Header Section */}
             <div className="bg-white p-4 rounded-lg shadow-md mb-6 border border-blue-100">
                 <h2 className="text-xl font-semibold text-blue-900">Student Information</h2>
-                <p className="text-blue-600 mt-1">Update your student details</p>
+                <p className="text-blue-600 mt-1">Manage account preferences and privacy settings</p>
             </div>
 
             {/* Student Information Form */}

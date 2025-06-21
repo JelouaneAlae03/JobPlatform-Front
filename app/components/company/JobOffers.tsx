@@ -244,10 +244,10 @@ export default function JobOffers() {
                 };
 
                 if (editingOffer) {
-                    await axios.put(`http://127.0.0.1:8000/api/offers/${editingOffer.id}`, submitData, { headers });
+                    await axios.put(`http://127.0.0.1:8000/api/EditOffer/${editingOffer.id}`, submitData, { headers });
                     toast.success('Offer updated successfully');
                 } else {
-                    await axios.post('http://127.0.0.1:8000/api/offers', submitData, { headers });
+                    await axios.post('http://127.0.0.1:8000/api/Addoffers', submitData, { headers });
                     toast.success('Offer created successfully');
                 }
 
@@ -282,7 +282,7 @@ export default function JobOffers() {
         setDeletingOffers(prev => new Set(prev).add(id));
 
         try {
-            await axios.delete(`http://127.0.0.1:8000/api/offers/${id}`, {
+            await axios.delete(`http://127.0.0.1:8000/api/deleteoffer/${id}`, {
                 headers: {
                     Authorization: `Bearer ${Cookies.get('access_token')}`
                 }
@@ -326,7 +326,7 @@ export default function JobOffers() {
 
         await withLoading(async () => {
             try {
-                await axios.delete(`http://127.0.0.1:8000/api/offers/${offerToDelete.id}`, {
+                await axios.delete(`http://127.0.0.1:8000/api/deleteoffer/${offerToDelete.id}`, {
                     headers: {
                         Authorization: `Bearer ${Cookies.get('access_token')}`
                     }
@@ -385,7 +385,7 @@ export default function JobOffers() {
                 skills: editFormData.skills.map(skill => skill.name).join(',')
             };
 
-            await axios.put(`http://127.0.0.1:8000/api/offers/${offerToEdit.id}`, submitData, { headers });
+            await axios.put(`http://127.0.0.1:8000/api/EditOffer/${offerToEdit.id}`, submitData, { headers });
             toast.success('Offer updated successfully');
             setIsEditModalOpen(false);
             setOfferToEdit(null);

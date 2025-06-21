@@ -9,7 +9,6 @@ import { useLocation } from 'react-router';
 // Role-based navigation items
 const studentNavigationItems = [
     { name: 'Job List', icon: '📊', path: '/' },
-    // { name: 'My Applications', icon: '📝', path: '/applications' },
     { name: 'Saved Jobs', icon: '🔖', path: '/saved' },
     { name: 'Profile', icon: '👨‍🎓', path: '/student-profile' },
     { name: 'Settings', icon: '⚙️', path: '/settings' },
@@ -53,12 +52,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
             return;
         }
 
-        // alert("i am " + userType + " to " + Location.pathname)
-
-        // if (userType === "company" && Location.pathname === "/") {
-        //     navigate('/offer-manager');
-        //     // alert("ana kknat7awa");
-        // }
     }, [navigate]);
 
     // Get navigation items based on user type
@@ -89,7 +82,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
         Cookies.remove('user');
         Cookies.remove('user_type');
         Cookies.remove('access_token');
-        // toast.success('Logged out successfully');
         navigate('/login');
     };
 
@@ -116,7 +108,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
             {/* Sidebar */}
             <div
-                className={`fixed lg:static inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+                className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
                     } ${isSidebarExpanded ? 'w-64' : 'w-20'} bg-blue-900 text-white`}
             >
                 <div className="h-full flex flex-col">
@@ -170,7 +162,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col min-h-screen">
+            <div className="flex-1 flex flex-col min-h-screen lg:ml-64">
                 {/* Top Navigation Bar */}
                 <nav className="bg-white shadow-md">
                     <div className="px-4 sm:px-6 lg:px-8">

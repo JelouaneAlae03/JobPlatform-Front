@@ -101,7 +101,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
             {/* Mobile Header */}
             <div className="lg:hidden bg-white shadow-md p-4">
                 <div className="flex justify-between items-center">
-                    <h1 className="text-xl font-semibold text-blue-900">JobPlatform</h1>
+                    <h1 className="text-xl font-semibold text-blue-900">EzooHire</h1>
                     <button
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         className="p-2 rounded-md hover:bg-gray-100 text-gray-600 focus:outline-none"
@@ -125,7 +125,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                     {/* Sidebar Header */}
                     <div className="p-4 flex items-center justify-between border-b border-blue-800">
                         {isSidebarExpanded ? (
-                            <h1 className="text-xl font-semibold text-white">JobPlatform</h1>
+                            <h1 className="text-xl font-semibold text-white">EzooHire</h1>
                         ) : (
                             <span className="text-2xl"></span>
                         )}

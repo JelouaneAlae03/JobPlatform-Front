@@ -143,6 +143,19 @@ export default function Register() {
         <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <Toaster />
             <div className="max-w-md w-full space-y-8">
+                {/* Return to Home Button - Enhanced */}
+                <div className="flex justify-center">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="inline-flex items-center px-6 py-3 text-base font-semibold text-blue-700 bg-white border-2 border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 hover:text-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 active:scale-95"
+                    >
+                        <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Return to Home
+                    </button>
+                </div>
+                
                 <div>
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
                         Create your account
